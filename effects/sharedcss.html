@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Effect Template</title>
+  
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      font-family: "Offside", sans-serif !important;
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      min-height: 100vh;
+      background-color: #E2A1B8;
+      background-image: repeating-linear-gradient(
+        0deg,
+        rgba(0, 0, 0, 0.04) 0px,
+        rgba(0, 0, 0, 0.04) 1px,
+        transparent 1px,
+        transparent 3px
+      );
+      color: #1A1A1A;
+      user-select: none;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      width: 100%;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 16px 24px 8px 24px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 28px;
+      font-weight: bold;
+      letter-spacing: -0.5px;
+      color: #000;
+      margin-bottom: 4px;
+    }
+
+    .subtitle {
+      font-size: 12px;
+      max-width: 600px;
+      color: rgba(0, 0, 0, 0.85);
+      font-weight: 500;
+      margin-bottom: 12px;
+    }
+
+    .tags-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      font-size: 10px;
+      font-weight: bold;
+    }
+
+    .tag {
+      padding: 4px 10px;
+      background: #F4E8DB;
+      border: 2px solid #000;
+      box-shadow: 1.5px 1.5px 0px #000;
+      border-radius: 4px;
+    }
+
+    /* Main Layout Grid */
+    main {
+      display: grid !important;
+      grid-template-columns: minmax(210px, 300px) minmax(380px, 1fr) minmax(210px, 300px);
+      align-items: stretch !important;
+      gap: clamp(12px, 2vw, 20px);
+      width: 100% !important;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 12px clamp(12px, 2vw, 24px) 24px clamp(12px, 2vw, 24px) !important;
+    }
+
+    main > .left-panel { grid-column: 1; grid-row: 1; width: 100% !important; align-self: center; }
+    main > #canvasContainer { grid-column: 2; grid-row: 1; width: 100% !important; height: 100% !important; min-height: 480px !important; }
+    main > .right-panel { grid-column: 3; grid-row: 1; width: 100% !important; align-self: center; }
+
+    /* Retro Panels */
+    .left-panel, .right-panel {
+      background: #F4E8DB !important;
+      border: 2px solid #000 !important;
+      box-shadow: 4px 4px 0px #000 !important;
+      border-radius: 6px !important;
+      padding: 16px !important;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .panel-label {
+      font-size: 11px;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #000;
+      padding: 2px 4px;
+      border-bottom: 2px solid #000;
+      margin-bottom: 4px;
+    }
+
+    /* Canvas Container */
+    #canvasContainer {
+      background: #5C7A6D !important;
+      border: 2px solid #000 !important;
+      box-shadow: 6px 6px 0px #000 !important;
+      border-radius: 6px !important;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Uniform Pill / Control Row */
+    .uniform-pill {
+      width: 100%;
+      min-height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 6px 12px;
+      background: #EEDFD0 !important;
+      border: 2px solid #000 !important;
+      box-shadow: 2px 2px 0px #000 !important;
+      color: #000 !important;
+      border-radius: 6px !important;
+      transition: background 0.15s, transform 0.1s;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    .uniform-pill:hover {
+      background: #FAF2E9 !important;
+    }
+
+    button.uniform-pill:active {
+      transform: translate(2px, 2px);
+      box-shadow: 0px 0px 0px #000 !important;
+    }
+
+    /* Mode Buttons Container */
+    .mode-container {
+      display: flex;
+      justify-content: space-around;
+      padding: 4px;
+    }
+
+    .mode-btn {
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: bold;
+      color: #000 !important;
+      border: 1.5px solid transparent;
+      border-radius: 4px !important;
+      background: transparent;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .mode-btn.active {
+      background: #FFD1DF !important;
+      border-color: #000 !important;
+      box-shadow: 1.5px 1.5px 0px #000 !important;
+    }
+
+    /* Inputs & Controls */
+    input[type=text] {
+      outline: none;
+      background: #FAF2E9;
+      border: 1.5px solid #000;
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: #000;
+      font-size: 11px;
+      font-weight: bold;
+    }
+
+    input[type=range] {
+      appearance: none;
+      -webkit-appearance: none;
+      background: #D8C4B2;
+      border: 1.5px solid #000;
+      border-radius: 4px;
+      height: 8px;
+      width: 95px;
+      flex-shrink: 1;
+      min-width: 60px;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      -webkit-appearance: none;
+      height: 16px;
+      width: 12px;
+      border-radius: 2px;
+      background: #FFD1DF;
+      border: 1.5px solid #000;
+      cursor: pointer;
+      box-shadow: 1px 1px 0px #000;
+    }
+
+    .value-box {
+      background: #FAF2E9 !important;
+      border: 1.5px solid #000 !important;
+      padding: 1px 6px !important;
+      border-radius: 4px !important;
+      font-size: 10px;
+      font-weight: bold;
+      color: #000;
+    }
+
+    .color-preset-btn {
+      border: 1.5px solid #000 !important;
+      box-shadow: 1px 1px 0px #000;
+      cursor: pointer;
+      transition: transform 0.15s;
+    }
+
+    .color-preset-btn:hover {
+      transform: scale(1.15);
+    }
+
+    #customColorPicker {
+      border: 1.5px solid #000 !important;
+      border-radius: 50%;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    /* Instruction Badge / Overlay */
+    #instructionBadge {
+      position: absolute;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 20;
+      pointer-events: none;
+    }
+
+    #instructionBadge > div {
+      background: #F4E8DB !important;
+      border: 2px solid #000 !important;
+      box-shadow: 3px 3px 0px #000 !important;
+      color: #000 !important;
+      padding: 6px 12px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    #effectCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      cursor: crosshair;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      z-index: 50;
+      background: #F4E8DB !important;
+      border: 2px solid #000 !important;
+      box-shadow: 4px 4px 0px #000 !important;
+      color: #000 !important;
+      padding: 10px 16px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transform: translateX(120%);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+
+    #toast.show {
+      transform: translateX(0);
+      opacity: 1;
+    }
+
+    /* Responsive View */
+    @media(max-width: 1000px) {
+      main {
+        grid-template-columns: 1fr;
+        padding: 12px !important;
+      }
+      main > .left-panel { grid-column: 1; grid-row: 2; }
+      main > #canvasContainer { grid-column: 1; grid-row: 1; min-height: 350px !important; }
+      main > .right-panel { grid-column: 1; grid-row: 3; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Header Section -->
+  <header>
+    <h1>Effect Title Placeholder</h1>
+    <p class="subtitle">Interactive canvas simulation template. Customize this description for your specific effect implementation.</p>
+    <div class="tags-container">
+      <span class="tag">CATEGORY: Interactive / Visuals</span>
+      <span class="tag">Canvas</span>
+      <span class="tag">JavaScript</span>
+    </div>
+  </header>
+
+  <!-- Main Grid Container -->
+  <main>
+    <!-- Left Control Panel: Actions & Modes -->
+    <div class="left-panel">
+      <div class="panel-label">Actions & Modes</div>
+
+      <div class="uniform-pill mode-container">
+        <button class="mode-btn active" data-mode="mode1">Mode A</button>
+        <button class="mode-btn" data-mode="mode2">Mode B</button>
+        <button class="mode-btn" data-mode="mode3">Mode C</button>
+      </div>
+
+      <div class="uniform-pill">
+        <span class="text-xs font-bold" style="font-size: 11px;">Input Text</span>
+        <input type="text" id="effectTextInput" value="SAMPLE" class="w-28 text-right uppercase tracking-wider">
+      </div>
+
+      <button id="triggerActionBtn" class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Trigger Action</span>
+        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+      </button>
+
+      <button id="resetCanvasBtn" class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Reset Canvas</span>
+        <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+      </button>
+
+      <div class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Color Theme</span>
+        <div style="display: flex; align-items: center; gap: 6px;">
+          <button class="color-preset-btn" data-color="#FF6BBC" style="width: 18px; height: 18px; border-radius: 50%; background: #FF6BBC;"></button>
+          <button class="color-preset-btn" data-color="#FF85A1" style="width: 18px; height: 18px; border-radius: 50%; background: #FF85A1;"></button>
+          <button class="color-preset-btn" data-color="#B5838D" style="width: 18px; height: 18px; border-radius: 50%; background: #B5838D;"></button>
+          <button class="color-preset-btn" data-color="#C77DFF" style="width: 18px; height: 18px; border-radius: 50%; background: #C77DFF;"></button>
+          <input type="color" id="customColorPicker" value="#FF6BBC" style="width: 18px; height: 18px; padding: 0;">
+        </div>
+      </div>
+    </div>
+
+    <!-- Center Stage / Canvas Area -->
+    <div id="canvasContainer">
+      <div id="instructionBadge">
+        <div>
+          <span style="width: 8px; height: 8px; border-radius: 50%; background: #FF6BBC; border: 1px solid #000;"></span>
+          <span>Interact or drag cursor across the canvas area!</span>
+        </div>
+      </div>
+      <canvas id="effectCanvas"></canvas>
+    </div>
+
+    <!-- Right Control Panel: Physics / Variable Sliders -->
+    <div class="right-panel">
+      <div class="panel-label">Effect Parameters</div>
+
+      <div class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Parameter 1</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="param1Val" class="value-box">0.82</span>
+          <input type="range" id="param1Slider" min="0" max="1" step="0.01" value="0.82">
+        </div>
+      </div>
+
+      <div class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Parameter 2</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="param2Val" class="value-box">0.08</span>
+          <input type="range" id="param2Slider" min="0" max="1" step="0.01" value="0.08">
+        </div>
+      </div>
+
+      <div class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Intensity</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="param3Val" class="value-box">0.35</span>
+          <input type="range" id="param3Slider" min="0" max="1" step="0.05" value="0.35">
+        </div>
+      </div>
+
+      <div class="uniform-pill">
+        <span style="font-size: 11px; font-weight: bold;">Scale / Size</span>
+        <div style="display: flex; align-items: center; gap: 8px;">
+          <span id="param4Val" class="value-box">14px</span>
+          <input type="range" id="param4Slider" min="1" max="50" step="1" value="14">
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Toast Notification Popup -->
+  <div id="toast">
+    <svg style="width: 16px; height: 16px;" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+    <span id="toastMsg">Action completed successfully!</span>
+  </div>
+
+  <script>
+    // Quick helper wiring for your placeholder interactivity
+    const canvas = document.getElementById('effectCanvas');
+    const ctx = canvas.getContext('2d');
+
+    function resizeCanvas() {
+      canvas.width = canvas.parentElement.clientWidth;
+      canvas.height = canvas.parentElement.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Basic canvas placeholder loop
+    function drawPlaceholder() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 36px "Offside", sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(document.getElementById('effectTextInput').value || 'EFFECT', canvas.width / 2, canvas.height / 2);
+      requestAnimationFrame(drawPlaceholder);
+    }
+    drawPlaceholder();
+
+    // Toast trigger demo function
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').innerText = message;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2500);
+    }
+
+    document.getElementById('triggerActionBtn').addEventListener('click', () => showToast('Effect triggered successfully!'));
+    document.getElementById('resetCanvasBtn').addEventListener('click', () => showToast('Canvas state reset!'));
+  </script>
+</body>
+</html>

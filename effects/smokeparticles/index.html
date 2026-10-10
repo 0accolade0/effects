@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pastel Fluid Smoke</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden}
+body{background:#D39DB6;cursor:none}
+body:before{content:"";position:fixed;inset:0;background:
+radial-gradient(circle at 20% 25%,#F88B88 0,transparent 30%),
+radial-gradient(circle at 80% 70%,#A18EC8 0,transparent 32%),#D39DB6;z-index:-1}
+body.transparent{background:transparent}
+body.transparent:before{display:none}
+body.custom{background:var(--bg,#D39DB6)}
+body.custom:before{background:radial-gradient(circle at 20% 25%,#F88B88 0,transparent 30%),radial-gradient(circle at 80% 70%,#A18EC8 0,transparent 32%),var(--bg,#D39DB6)}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block;background:transparent}
+.cursor{position:fixed;width:12px;height:12px;border:1px solid #fff;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;z-index:5;box-shadow:0 0 18px rgba(255,220,235,.75)}
+body.transparent .cursor,body.custom .cursor{display:none}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas><div class="cursor" id="cursor"></div>
+
+<script>
+const C=document.getElementById("c"),X=C.getContext("2d"),CUR=document.getElementById("cursor"),
+N=160,S=(N+2)**2,I=(x,y)=>x+(N+2)*y,cl=(n,a,b)=>Math.max(a,Math.min(b,n)),
+COL=[[211,157,182],[161,142,200],[248,118,112],[240,209,169],[248,139,136],[255,107,188],[216,128,176]];
+
+const PARAMS=new URLSearchParams(location.search);
+const EMBED=PARAMS.has("embed");
+
+const EFFECT_SCHEMA=[
+ {key:"background",label:"Background",type:"select",default:"default",options:[
+  {value:"default",label:"Default Pink"},
+  {value:"transparent",label:"Transparent"},
+  {value:"custom",label:"Custom Color"}
+ ]},
+ {key:"backgroundColor",label:"Custom Background Color",type:"color",default:"#D39DB6"}
+];
+
+function applyConfig(){
+ let bg=PARAMS.get("background")||"default",color=PARAMS.get("backgroundColor")||"#D39DB6";
+ document.body.classList.remove("transparent","custom");
+ if(bg==="transparent")document.body.classList.add("transparent");
+ if(bg==="custom"){
+  document.body.classList.add("custom");
+  document.body.style.setProperty("--bg",color);
+ }
+}
+
+if(EMBED)applyConfig();
+
+window.addEventListener("message",e=>{
+ const d=e.data;
+ if(!d)return;
+
+ if(d.type==="effect:get-config"){
+  parent.postMessage({
+   type:"effect:config-schema",
+   requestId:d.requestId,
+   fields:EFFECT_SCHEMA
+  },"*");
+ }
+
+ if(d.type==="effect:get-state"){
+  parent.postMessage({
+   type:"effect:state",
+   requestId:d.requestId,
+   state:{
+    background:PARAMS.get("background")||"default",
+    backgroundColor:PARAMS.get("backgroundColor")||"#D39DB6"
+   }
+  },"*");
+ }
+});
+
+let W,H,DPR,sc,ss,u=new Float32Array(S),v=new Float32Array(S),u2=new Float32Array(S),v2=new Float32Array(S),
+p=new Float32Array(S),div=new Float32Array(S),vo=new Float32Array(S),d=new Float32Array(S*3),d2=new Float32Array(S*3),
+mx=-100,my=-100,px=-100,py=-100;
+
+function resize(){
+ DPR=Math.min(devicePixelRatio||1,2);
+ W=innerWidth;H=innerHeight;
+ C.width=W*DPR;C.height=H*DPR;
+ X.setTransform(DPR,0,0,DPR,0,0);
+ sc=document.createElement("canvas");
+ sc.width=sc.height=N;
+ ss=sc.getContext("2d");
+}
+resize();
+addEventListener("resize",resize);
+
+addEventListener("pointermove",e=>{
+ mx=e.clientX;my=e.clientY;
+ if(!EMBED){CUR.style.left=mx+"px";CUR.style.top=my+"px"}
+});
+
+function inject(x,y,fx,fy,pw=1){
+ let gx=cl(Math.floor(x/W*N)+1,2,N-1),gy=cl(Math.floor(y/H*N)+1,2,N-1),
+ R=3.8+pw*.9,col=COL[Math.random()*COL.length|0];
+ for(let yy=Math.floor(gy-R);yy<=Math.ceil(gy+R);yy++)
+ for(let xx=Math.floor(gx-R);xx<=Math.ceil(gx+R);xx++){
+  let dx=xx-gx,dy=yy-gy,q=Math.exp(-(dx*dx+dy*dy)/(R*R*.48));
+  if(q<.025)continue;
+  let j=I(xx,yy),z=j*3,a=q*.095*pw;
+  u[j]+=fx*q*.62;
+  v[j]+=fy*q*.62;
+  d[z]=Math.min(.9,d[z]+col[0]/255*a);
+  d[z+1]=Math.min(.9,d[z+1]+col[1]/255*a);
+  d[z+2]=Math.min(.9,d[z+2]+col[2]/255*a);
+ }
+}
+
+function advV(){
+ for(let y=1;y<=N;y++)for(let x=1;x<=N;x++){
+  let j=I(x,y),bx=cl(x-u[j]*.075,1,N),by=cl(y-v[j]*.075,1,N),
+  x0=bx|0,y0=by|0,sx=bx-x0,sy=by-y0,
+  a=I(x0,y0),b=I(x0+1,y0),c=I(x0,y0+1),e=I(x0+1,y0+1);
+  u2[j]=(1-sy)*((1-sx)*u[a]+sx*u[b])+sy*((1-sx)*u[c]+sx*u[e]);
+  v2[j]=(1-sy)*((1-sx)*v[a]+sx*v[b])+sy*((1-sx)*v[c]+sx*v[e]);
+ }
+ [u,u2]=[u2,u];[v,v2]=[v2,v];
+}
+
+function advD(){
+ for(let y=1;y<=N;y++)for(let x=1;x<=N;x++){
+  let j=I(x,y),bx=cl(x-u[j]*.075,1,N),by=cl(y-v[j]*.075,1,N),
+  x0=bx|0,y0=by|0,sx=bx-x0,sy=by-y0,
+  A=I(x0,y0)*3,B=I(x0+1,y0)*3,D=I(x0,y0+1)*3,E=I(x0+1,y0+1)*3,z=j*3;
+  for(let k=0;k<3;k++)d2[z+k]=(1-sy)*((1-sx)*d[A+k]+sx*d[B+k])+sy*((1-sx)*d[D+k]+sx*d[E+k]);
+ }
+ [d,d2]=[d2,d];
+}
+
+function vort(){
+ for(let y=1;y<N;y++)for(let x=1;x<N;x++){
+  let j=I(x,y);
+  vo[j]=.5*(v[j+1]-v[j-1]-u[j+N+2]+u[j-N-2]);
+ }
+ for(let y=2;y<N-1;y++)for(let x=2;x<N-1;x++){
+  let j=I(x,y),gx=Math.abs(vo[j+1])-Math.abs(vo[j-1]),
+  gy=Math.abs(vo[j+N+2])-Math.abs(vo[j-N-2]),l=Math.hypot(gx,gy)+.001,f=vo[j]*.28;
+  u[j]+=gy/l*f;v[j]-=gx/l*f;
+ }
+}
+
+function project(){
+ for(let y=1;y<=N;y++)for(let x=1;x<=N;x++){
+  let j=I(x,y);
+  div[j]=-.5*(u[j+1]-u[j-1]+v[j+N+2]-v[j-N-2]);p[j]=0;
+ }
+ for(let k=0;k<28;k++)for(let y=1;y<=N;y++)for(let x=1;x<=N;x++){
+  let j=I(x,y);
+  p[j]=(div[j]+p[j-1]+p[j+1]+p[j-N-2]+p[j+N-2])*.25;
+ }
+ for(let y=1;y<=N;y++)for(let x=1;x<=N;x++){
+  let j=I(x,y);
+  u[j]-=.5*(p[j+1]-p[j-1]);
+  v[j]-=.5*(p[j+N+2]-p[j-N-2]);
+ }
+}
+
+function fade(){
+ for(let i=0;i<d.length;i++)d[i]*=.982;
+ for(let i=0;i<S;i++){u[i]*=.993;v[i]*=.993}
+}
+
+function render(){
+ let im=ss.createImageData(N,N),a=im.data;
+ for(let y=0;y<N;y++)for(let x=0;x<N;x++){
+  let j=I(x+1,y+1),z=j*3,r=d[z],g=d[z+1],b=d[z+2],
+  den=Math.min(1,(r+g+b)*2.7);
+  if(den<.004)continue;
+  let mix=.58,q=(x+y*N)*4;
+  a[q]=r*255*(1-mix)+255*mix;
+  a[q+1]=g*255*(1-mix)+244*mix;
+  a[q+2]=b*255*(1-mix)+238*mix;
+  a[q+3]=Math.min(205,den*175);
+ }
+ ss.putImageData(im,0,0);
+ X.globalAlpha=1;
+ X.clearRect(0,0,W,H);
+ X.imageSmoothingEnabled=true;
+ X.drawImage(sc,0,0,W,H);
+}
+
+function loop(){
+ requestAnimationFrame(loop);
+ if(mx>-50){
+  let dx=mx-px,dy=my-py,s=Math.hypot(dx,dy);
+  if(s>.1){
+   let pw=Math.min(2.6,.48+s*.035);
+   inject(mx,my,dx*.34,dy*.34,pw);
+   inject(mx-dy*.62,my+dx*.62,dx*.045-dy*.035,dy*.045+dx*.035,.65);
+   if(s>5)inject(mx+dy*.8,my-dx*.8,dx*.018+dy*.025,dy*.018-dx*.025,.4);
+   if(s>11)inject(mx-dx*.9,my-dy*.9,-dy*.085,dx*.085,.7);
+  }
+  px+=(mx-px)*.15;py+=(my-py)*.15;
+ }
+ advV();vort();project();advD();fade();render();
+}
+
+px=W/2;py=H/2;loop();
+</script>
+</body>
+</html>

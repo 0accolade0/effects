@@ -1,0 +1,1603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Alphabet Inside Alphabet</title>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+
+<script>
+tailwind.config = {
+  theme: {
+    extend: {
+      fontFamily: {
+        display: ["Offside", "sans-serif"],
+        body: ["Offside", "sans-serif"]
+      }
+    }
+  }
+};
+</script>
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: "Offside", sans-serif !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100vh;
+  background-color: #E2A1B8;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0,0,0,.04) 0px,
+    rgba(0,0,0,.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  color: #1A1A1A;
+  user-select: none;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  flex-shrink: 0;
+}
+
+main {
+  display: grid !important;
+  grid-template-columns: minmax(210px,300px) minmax(0,1fr) minmax(210px,300px);
+  align-items: stretch !important;
+  gap: clamp(12px,2vw,20px);
+  width: 100% !important;
+  max-width: 1400px;
+  height: calc(100vh - 100px);
+  margin: 0 auto;
+  padding: 0 clamp(12px,2vw,24px) 16px !important;
+  overflow: hidden;
+}
+
+main > .left-panel {
+  grid-column: 1;
+  grid-row: 1;
+  width: 100% !important;
+  align-self: center;
+}
+
+main > #canvasContainer {
+  grid-column: 2;
+  grid-row: 1;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+}
+
+main > .right-panel {
+  grid-column: 3;
+  grid-row: 1;
+  width: 100% !important;
+  align-self: center;
+}
+
+.left-panel, .right-panel {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0 #000 !important;
+  border-radius: 6px !important;
+  padding: 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: #000;
+  padding: 2px 4px;
+  border-bottom: 2px solid #000;
+  margin-bottom: 4px;
+}
+
+#canvasContainer {
+  background: transparent;
+  border: 2px solid #000 !important;
+  box-shadow: 6px 6px 0 #000 !important;
+  border-radius: 6px !important;
+  position: relative;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+#effectCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: pan-y;
+}
+
+.uniform-pill {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #EEDFD0 !important;
+  border: 2px solid #000 !important;
+  box-shadow: 2px 2px 0 #000 !important;
+  color: #000 !important;
+  border-radius: 6px !important;
+  transition: background .15s, transform .1s;
+}
+
+.uniform-pill:hover {
+  background: #FAF2E9 !important;
+}
+
+button.uniform-pill:active {
+  transform: translate(2px,2px);
+  box-shadow: none !important;
+}
+
+.mode-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000 !important;
+  border: 1.5px solid transparent;
+  border-radius: 4px !important;
+  background: transparent;
+  cursor: pointer;
+  transition: all .15s ease;
+}
+
+.mode-btn.active {
+  background: #FFD1DF !important;
+  border-color: #000 !important;
+  box-shadow: 1.5px 1.5px 0 #000 !important;
+}
+
+input[type="text"] {
+  outline: none;
+  background: #FAF2E9;
+  border: 1.5px solid #000;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+  min-width: 0;
+}
+
+input[type="range"] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #D8C4B2;
+  border: 1.5px solid #000;
+  border-radius: 4px;
+  height: 8px;
+  width: 95px;
+  flex-shrink: 1;
+  min-width: 50px;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 16px;
+  width: 12px;
+  border-radius: 2px;
+  background: #FFD1DF;
+  border: 1.5px solid #000;
+  cursor: pointer;
+  box-shadow: 1px 1px 0 #000;
+}
+
+input[type="range"]::-moz-range-thumb {
+  height: 16px;
+  width: 12px;
+  border-radius: 2px;
+  background: #FFD1DF;
+  border: 1.5px solid #000;
+  cursor: pointer;
+}
+
+.value-box {
+  background: #FAF2E9 !important;
+  border: 1.5px solid #000 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 10px;
+  font-weight: bold;
+  color: #000;
+}
+
+.color-preset-btn {
+  border: 1.5px solid #000 !important;
+  box-shadow: 1px 1px 0 #000;
+  transition: transform .15s;
+  flex-shrink: 0;
+}
+
+.color-preset-btn:hover {
+  transform: scale(1.15);
+}
+
+#customColorPicker, #backgroundColorPicker {
+  border: 1.5px solid #000 !important;
+  border-radius: 50%;
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 0;
+  flex-shrink: 0;
+}
+
+#customColorPicker::-webkit-color-swatch-wrapper,
+#backgroundColorPicker::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+#customColorPicker::-webkit-color-swatch,
+#backgroundColorPicker::-webkit-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+#customColorPicker::-moz-color-swatch,
+#backgroundColorPicker::-moz-color-swatch {
+  border: 0;
+  border-radius: 50%;
+}
+
+#instructionBadge > div {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 3px 3px 0 #000 !important;
+  color: #000 !important;
+}
+
+#toast {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0 #000 !important;
+  color: #000 !important;
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #E09EB6;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #F4E8DB;
+  border: 1.5px solid #000;
+}
+
+@media(max-width:1000px) {
+  html, body {
+    overflow-y: auto !important;
+    height: auto !important;
+  }
+  main {
+    grid-template-columns: minmax(0,1fr);
+    height: auto !important;
+    padding: 12px !important;
+  }
+
+  main > .left-panel {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  main > #canvasContainer {
+    grid-column: 1;
+    grid-row: 1;
+    min-height: 320px !important;
+    height: 50vh !important;
+  }
+
+  main > .right-panel {
+    grid-column: 1;
+    grid-row: 3;
+  }
+}
+
+html.embed-mode, body.embed-mode {
+  background: transparent !important;
+  overflow: hidden !important;
+  min-height: 0 !important;
+  width: 100%;
+  height: 100%;
+}
+
+body.embed-mode main {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  max-width: none !important;
+  overflow: hidden !important;
+}
+
+body.embed-mode main > .left-panel,
+body.embed-mode main > .right-panel,
+body.embed-mode .window-title-bar,
+body.embed-mode header,
+body.embed-mode #instructionBadge,
+body.embed-mode #toast {
+  display: none !important;
+}
+
+body.embed-mode #canvasContainer {
+  position: absolute !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+
+body.embed-mode.background-colored #canvasContainer {
+  background: var(--embed-background) !important;
+}
+body.embed-mode:not(.background-colored) #canvasContainer {
+  background: transparent !important;
+}
+</style>
+</head>
+
+<body class="flex flex-col relative font-display">
+
+<header class="w-full max-w-[1400px] mx-auto px-6 pt-4 pb-2 relative flex flex-col items-center text-center">
+  <h1 class="text-2xl font-bold tracking-tight text-black mb-1">
+    Alphabet Inside Alphabet
+  </h1>
+  <p class="text-xs max-w-xl text-black/85 font-medium mb-3">
+    A playful typography effect where letters are filled with repeating alphabet patterns, creating a bold, customizable text visual.
+  </p>
+  <div class="flex flex-wrap items-center justify-center gap-2 text-[10px] font-bold">
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">CATEGORY: TYPOGRAPHY</span>
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">Canvas</span>
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">JavaScript</span>
+  </div>
+</header>
+
+<main class="relative flex-1 w-full overflow-hidden">
+
+  <div class="left-panel z-20 shrink-0">
+    <div class="panel-label">Actions &amp; Modes</div>
+
+    <div class="uniform-pill justify-around p-1 flex-wrap gap-1">
+      <button data-mode="mode1" class="mode-btn active">Scatter</button>
+      <button data-mode="mode2" class="mode-btn">Vortex</button>
+      <button data-mode="mode3" class="mode-btn">Gravity</button>
+      <button data-mode="mode4" class="mode-btn">Letter-Pipe</button>
+    </div>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Text</span>
+      <input type="text" id="textInput" value="HEY" placeholder="Type your text..." class="w-28 text-right uppercase tracking-wider">
+    </div>
+
+    <button id="actionBtn" class="uniform-pill group">
+      <span class="text-xs font-bold">Trigger Effect</span>
+      <span>→</span>
+    </button>
+
+    <button id="resetBtn" class="uniform-pill group">
+      <span class="text-xs font-bold">Reset</span>
+      <span>↻</span>
+    </button>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Color</span>
+      <div class="flex items-center gap-1.5">
+        <button data-color="#000000" class="color-preset-btn w-5 h-5 rounded-full bg-black scale-110" aria-label="Black"></button>
+        <button data-color="#FACC15" class="color-preset-btn w-5 h-5 rounded-full bg-[#FACC15]" aria-label="Yellow"></button>
+        <button data-color="#FF6BBC" class="color-preset-btn w-5 h-5 rounded-full bg-[#FF6BBC]" aria-label="Pink"></button>
+        <input type="color" id="customColorPicker" value="#000000" class="w-5 h-5 bg-transparent cursor-pointer border-0" aria-label="Custom text color">
+      </div>
+    </div>
+  </div>
+
+  <div id="canvasContainer" class="relative flex items-center justify-center">
+    <div id="instructionBadge" class="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-opacity duration-700">
+      <div class="px-3 py-1.5 rounded text-xs font-bold text-black flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-[#FACC15] animate-ping border border-black"></span>
+        <span>Interact with the effect</span>
+      </div>
+    </div>
+    <canvas id="effectCanvas" class="w-full h-full block"></canvas>
+    <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-black/40 pointer-events-none"></div>
+  </div>
+
+  <div class="right-panel z-20 shrink-0">
+    <div class="panel-label">Effect Settings</div>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Amount</span>
+      <div class="flex items-center gap-2">
+        <span id="amountVal" class="value-box">50</span>
+        <input type="range" id="amountSlider" min="0" max="100" step="1" value="50">
+      </div>
+    </div>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Size</span>
+      <div class="flex items-center gap-2">
+        <span id="sizeVal" class="value-box">20</span>
+        <input type="range" id="sizeSlider" min="1" max="50" step="1" value="20">
+      </div>
+    </div>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Speed</span>
+      <div class="flex items-center gap-2">
+        <span id="speedVal" class="value-box">1.0</span>
+        <input type="range" id="speedSlider" min="0" max="2" step="0.1" value="1">
+      </div>
+    </div>
+
+    <div class="uniform-pill">
+      <span class="text-xs font-bold">Background</span>
+      <div class="flex items-center gap-1.5">
+        <button id="backgroundDefaultBtn" type="button" class="mode-btn active" title="Default red background">Default</button>
+        <button id="backgroundTransparentBtn" type="button" class="mode-btn" title="Transparent background">Transparent</button>
+        <input type="color" id="backgroundColorPicker" value="#F87670" class="w-5 h-5 bg-transparent cursor-pointer border-0" title="Choose custom background color">
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast" class="fixed top-20 right-6 z-50 px-4 py-3 rounded text-black text-xs font-bold flex items-center gap-2 translate-x-32 opacity-0 transition-all duration-300">
+  <span>✓</span>
+  <span id="toastMsg">Action completed successfully!</span>
+</div>
+
+<script>
+const PARAMS = new URLSearchParams(location.search);
+const EMBED = PARAMS.get("embed") === "true" || PARAMS.get("embed") === "1";
+
+const EFFECT_SCHEMA = [
+  {key:"text",label:"Text",type:"text",default:"HEY",placeholder:"Type your text..."},
+  {key:"color",label:"Color",type:"color",default:"#000000"},
+  {key:"amount",label:"Amount",type:"range",default:50,min:0,max:100,step:1},
+  {key:"size",label:"Size",type:"range",default:20,min:1,max:50,step:1},
+  {key:"speed",label:"Speed",type:"range",default:1,min:0,max:2,step:0.1},
+  {
+    key:"background",
+    label:"Background",
+    type:"select",
+    default:"default",
+    options:[
+      {value:"default",label:"Default Red"},
+      {value:"transparent",label:"Transparent"},
+      {value:"custom",label:"Custom Color"}
+    ]
+  },
+  {key:"backgroundColor",label:"Custom Background Color",type:"color",default:"#F87670"},
+  {
+    key:"mode",
+    label:"Effect Mode",
+    type:"select",
+    default:"mode1",
+    options:[
+      {value:"mode1",label:"Scatter"},
+      {value:"mode2",label:"Vortex"},
+      {value:"mode3",label:"Gravity"},
+      {value:"mode4",label:"Letter-Pipe"}
+    ]
+  }
+];
+
+const state = {
+  text:"HEY",
+  color:"#000000",
+  amount:50,
+  size:20,
+  speed:1,
+  background:"default",
+  backgroundColor:"#F87670",
+  mode:"mode1"
+};
+
+const $ = id => document.getElementById(id);
+
+function validColor(value) {
+  return /^#[0-9a-fA-F]{6}$/.test(value || "");
+}
+
+function validBackground(value) {
+  return ["default","transparent","custom"].includes(value);
+}
+
+function clamp(value,min,max) {
+  return Math.min(Math.max(value,min),max);
+}
+
+function applyBackground() {
+  const canvasContainer = $("canvasContainer");
+  if (!canvasContainer) return;
+
+  document.body.classList.remove("background-colored");
+  document.documentElement.style.removeProperty("--embed-background");
+
+  if (state.background === "transparent") {
+    canvasContainer.style.background = "transparent";
+
+    if (EMBED) {
+      document.documentElement.style.background = "transparent";
+      document.body.style.background = "transparent";
+      document.body.style.backgroundImage = "none";
+    }
+    return;
+  }
+
+  const color = state.background === "custom"
+    ? state.backgroundColor
+    : "#F87670";
+
+  document.documentElement.style.setProperty("--embed-background",color);
+  document.body.classList.add("background-colored");
+  canvasContainer.style.background = color;
+
+  if (EMBED) {
+    document.documentElement.style.background = color;
+    document.body.style.background = color;
+    document.body.style.backgroundImage = "none";
+  }
+}
+
+function setBackground(value) {
+  if (!validBackground(value)) value = "default";
+
+  state.background = value;
+
+  if ($("backgroundColorPicker")) {
+    $("backgroundColorPicker").value = state.backgroundColor;
+  }
+
+  if ($("backgroundDefaultBtn")) {
+    $("backgroundDefaultBtn").classList.toggle("active",value === "default");
+  }
+
+  if ($("backgroundTransparentBtn")) {
+    $("backgroundTransparentBtn").classList.toggle("active",value === "transparent");
+  }
+
+  applyBackground();
+}
+
+function getEmbedConfig() {
+  let text = PARAMS.get("text");
+
+  if (text === null || text === "") text = "HEY";
+  text = text.toUpperCase().slice(0,40);
+
+  let color = PARAMS.get("color") || "#000000";
+  if (!validColor(color)) color = "#000000";
+
+  let amount = Number(PARAMS.get("amount"));
+  if (PARAMS.get("amount") === null || !Number.isFinite(amount)) amount = 50;
+  amount = clamp(amount,0,100);
+
+  let size = Number(PARAMS.get("size"));
+  if (PARAMS.get("size") === null || !Number.isFinite(size)) size = 20;
+  size = clamp(size,1,50);
+
+  let speed = Number(PARAMS.get("speed"));
+  if (PARAMS.get("speed") === null || !Number.isFinite(speed)) speed = 1;
+  speed = clamp(speed,0,2);
+
+  let background = PARAMS.get("background");
+  let backgroundColor = PARAMS.get("backgroundColor") || "#F87670";
+  if (!validColor(backgroundColor)) backgroundColor = "#F87670";
+
+  if (!background) {
+    background = PARAMS.has("backgroundColor") ? "custom" : "default";
+  }
+  if (!validBackground(background)) background = "default";
+
+  let mode = PARAMS.get("mode");
+  if (!["mode1", "mode2", "mode3", "mode4"].includes(mode)) mode = "mode1";
+
+  return {text,color,amount,size,speed,background,backgroundColor,mode};
+}
+
+const EMBED_CONFIG = getEmbedConfig();
+
+function applyEmbedConfig() {
+  if (!EMBED) return;
+
+  document.documentElement.classList.add("embed-mode");
+  document.body.classList.add("embed-mode");
+
+  Object.assign(state,EMBED_CONFIG);
+
+  if ($("textInput")) $("textInput").value = state.text;
+  if ($("customColorPicker")) $("customColorPicker").value = state.color;
+
+  if ($("amountSlider")) {
+    $("amountSlider").value = state.amount;
+    $("amountVal").textContent = state.amount;
+  }
+
+  if ($("sizeSlider")) {
+    $("sizeSlider").value = state.size;
+    $("sizeVal").textContent = state.size;
+  }
+
+  if ($("speedSlider")) {
+    $("speedSlider").value = state.speed;
+    $("speedVal").textContent = state.speed.toFixed(1);
+  }
+
+  setBackground(state.background);
+
+  document.querySelectorAll(".mode-btn[data-mode]").forEach(b => {
+    b.classList.toggle("active", b.dataset.mode === state.mode);
+  });
+}
+
+const canvas = $("effectCanvas");
+const ctx = canvas ? canvas.getContext("2d",{alpha:true}) : null;
+const container = $("canvasContainer");
+
+let particles = [];
+let charCanvases = {};
+let resizeObserver = null;
+let resizeTimer = 0;
+let animationFrame = 0;
+let initialized = false;
+
+let letterBoundaryMaps = {};
+
+const pointer = {x:-999,y:-999};
+
+function buildCharCache(color) {
+  charCanvases = {};
+
+  const chars = new Set((state.text || "HEY").toUpperCase().split(""));
+  chars.add("A");
+
+  chars.forEach(ch => {
+    const c = document.createElement("canvas");
+    c.width = 80;
+    c.height = 80;
+
+    const cx = c.getContext("2d");
+    cx.font = 'bold 54px "Offside", sans-serif';
+    cx.textAlign = "center";
+    cx.textBaseline = "middle";
+    cx.fillStyle = color;
+    cx.fillText(ch,40,40);
+
+    charCanvases[ch] = c;
+  });
+}
+
+
+function initEffect() {
+  if (!canvas || !container || !ctx) return;
+
+  const rect = container.getBoundingClientRect();
+  const width = Math.floor(rect.width);
+  const height = Math.floor(rect.height);
+
+  if (width <= 0 || height <= 0) return;
+
+  particles = [];
+  letterBoundaryMaps = {};
+
+  const text = (state.text || "HEY").toUpperCase();
+  buildCharCache(state.color);
+
+  const offCanvas = document.createElement("canvas");
+  offCanvas.width = width;
+  offCanvas.height = height;
+
+  const offCtx = offCanvas.getContext("2d", {willReadFrequently:true});
+  if (!offCtx) return;
+
+  offCtx.clearRect(0, 0, width, height);
+  offCtx.fillStyle = "#fff";
+  offCtx.textAlign = "center";
+  offCtx.textBaseline = "middle";
+
+  let fontSize = Math.min(
+    width * 0.88 / Math.max(text.length * 0.68, 1),
+    height * 0.62
+  );
+
+  fontSize = Math.max(8, fontSize);
+  offCtx.font = `${fontSize}px "Offside", sans-serif`;
+
+  while (offCtx.measureText(text).width > width * 0.9 && fontSize > 8) {
+    fontSize -= 1;
+    offCtx.font = `${fontSize}px "Offside", sans-serif`;
+  }
+
+  offCtx.fillText(text, width / 2, height / 2);
+
+  const pixels = offCtx.getImageData(0, 0, width, height).data;
+  const targetParticles = EMBED ? 2200 : 4200;
+  const densityStep = Math.max(2, Math.floor(120 / Math.max(state.amount, 1)));
+  const effectiveStep = Math.max(
+    densityStep,
+    Math.ceil(Math.sqrt((width * height) / targetParticles))
+  );
+
+  const totalChars = text.length;
+  const colWidth = width / totalChars;
+  const charColumns = {};
+
+  for (let i = 0; i < totalChars; i++) {
+    charColumns[i] = [];
+    letterBoundaryMaps[i] = new Uint8Array(width * height);
+  }
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const alpha = pixels[(y * width + x) * 4 + 3];
+      if (alpha <= 100) continue;
+
+      const charIndex = clamp(Math.floor(x / colWidth), 0, totalChars - 1);
+      letterBoundaryMaps[charIndex][y * width + x] = 1;
+    }
+  }
+
+  for (let y = 0; y < height; y += effectiveStep) {
+    for (let x = 0; x < width; x += effectiveStep) {
+      const alpha = pixels[(y * width + x) * 4 + 3];
+      if (alpha <= 100) continue;
+
+      const charIndex = clamp(Math.floor(x / colWidth), 0, totalChars - 1);
+      charColumns[charIndex].push({x, y});
+    }
+  }
+
+  for (let i = 0; i < totalChars; i++) {
+    const pts = charColumns[i];
+    if (!pts || !pts.length) continue;
+
+    const ch = text[i];
+    const maxPerChar = Math.max(1, Math.floor(targetParticles / totalChars));
+    const stride = Math.max(1, Math.ceil(pts.length / maxPerChar));
+
+    for (let j = 0; j < pts.length; j += stride) {
+      const pt = pts[j];
+
+      particles.push({
+        char: ch,
+        ox: pt.x,
+        oy: pt.y,
+        x: pt.x,
+        y: pt.y,
+        vx: 0,
+        vy: 0,
+        letterIndex: i
+      });
+    }
+  }
+}
+
+
+
+function resizeCanvas() {
+  if (!canvas || !container || !ctx) return;
+
+  const rect = container.getBoundingClientRect();
+  if (rect.width <= 0 || rect.height <= 0) return;
+
+  const dpr = EMBED ? Math.min(window.devicePixelRatio || 1,1) : Math.min(window.devicePixelRatio || 1,1.5);
+  const pixelWidth = Math.round(rect.width * dpr);
+  const pixelHeight = Math.round(rect.height * dpr);
+
+  if (canvas.width !== pixelWidth || canvas.height !== pixelHeight) {
+    canvas.width = pixelWidth;
+    canvas.height = pixelHeight;
+  }
+
+  canvas.style.width = "100%";
+  canvas.style.height = "100%";
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+
+  initEffect();
+}
+
+function scheduleResize() {
+  clearTimeout(resizeTimer);
+  resizeTimer = setTimeout(resizeCanvas,80);
+}
+
+
+
+function updateEffect() {
+  const mx = pointer.x;
+  const my = pointer.y;
+  const hasPointer = mx >= 0 && my >= 0;
+  const speed = state.speed;
+
+  const width = canvas.width / (EMBED ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+  const height = canvas.height / (EMBED ? 1 : Math.min(window.devicePixelRatio || 1, 1.5));
+
+  for (const p of particles) {
+    if (state.mode === "mode4") {
+      const mask = letterBoundaryMaps[p.letterIndex];
+
+      if (!mask) continue;
+
+      if (hasPointer && speed > 0) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const distSq = dx * dx + dy * dy;
+        const radius = 125;
+
+        if (distSq < radius * radius && distSq > 0.01) {
+          const dist = Math.sqrt(distSq);
+          const force = Math.pow(1 - dist / radius, 1.5);
+
+          p.vx += dx / dist * force * 1.8 * speed;
+          p.vy += dy / dist * force * 1.8 * speed;
+
+          const tangent = Math.sin(dist * 0.08 + p.letterIndex) * 0.65;
+          p.vx += (-dy / dist) * force * tangent * speed;
+          p.vy += (dx / dist) * force * tangent * speed;
+        }
+      }
+
+      p.vx += (p.ox - p.x) * 0.018;
+      p.vy += (p.oy - p.y) * 0.018;
+
+      p.vx *= 0.94;
+      p.vy *= 0.94;
+
+      const maxVelocity = 9 * Math.max(speed, 0.15);
+      p.vx = clamp(p.vx, -maxVelocity, maxVelocity);
+      p.vy = clamp(p.vy, -maxVelocity, maxVelocity);
+
+      const oldX = p.x;
+      const oldY = p.y;
+      const nextX = oldX + p.vx;
+      const nextY = oldY + p.vy;
+
+      const isInside = (x, y) => {
+        const ix = Math.round(x);
+        const iy = Math.round(y);
+
+        if (ix < 0 || iy < 0 || ix >= width || iy >= height) {
+          return false;
+        }
+
+        return mask[iy * Math.floor(width) + ix] === 1;
+      };
+
+      if (isInside(nextX, nextY)) {
+        p.x = nextX;
+        p.y = nextY;
+      } else {
+        const canMoveX = isInside(nextX, oldY);
+        const canMoveY = isInside(oldX, nextY);
+
+        if (canMoveX) {
+          p.x = nextX;
+          p.vy *= -0.72;
+          p.vx *= 0.96;
+        } else if (canMoveY) {
+          p.y = nextY;
+          p.vx *= -0.72;
+          p.vy *= 0.96;
+        } else {
+          p.vx *= -0.68;
+          p.vy *= -0.68;
+        }
+
+        p.vx *= 0.94;
+        p.vy *= 0.94;
+      }
+
+      if (!isInside(p.x, p.y)) {
+        p.x = oldX;
+        p.y = oldY;
+      }
+    } else {
+      if (hasPointer) {
+        const dx = p.x - mx;
+        const dy = p.y - my;
+        const distSq = dx * dx + dy * dy;
+        const radius = 85;
+
+        if (distSq < radius * radius && distSq > 1) {
+          const dist = Math.sqrt(distSq);
+          const force = (radius - dist) / radius;
+
+          if (state.mode === "mode1") {
+            p.vx += dx / dist * force * 5 * speed;
+            p.vy += dy / dist * force * 5 * speed;
+          } else if (state.mode === "mode2") {
+            p.vx += (-dy / dist) * force * 6 * speed;
+            p.vy += (dx / dist) * force * 6 * speed;
+          } else if (state.mode === "mode3") {
+            p.vx -= dx / dist * force * 4 * speed;
+            p.vy -= dy / dist * force * 4 * speed;
+          }
+        }
+      }
+
+      const spring = 0.1 * speed;
+      const friction = 0.8;
+
+      p.vx = (p.vx + (p.ox - p.x) * spring) * friction;
+      p.vy = (p.vy + (p.oy - p.y) * spring) * friction;
+
+      p.x += p.vx;
+      p.y += p.vy;
+    }
+  }
+}
+
+
+
+
+let pipeMaskCanvas = null;
+let pipeMaskKey = "";
+
+
+
+function drawEffect() {
+  if (!ctx || !canvas) return;
+
+  const dpr = EMBED ? 1 : Math.min(window.devicePixelRatio || 1, 1.5);
+  const width = canvas.width / dpr;
+  const height = canvas.height / dpr;
+  const time = performance.now() * 0.001;
+  const text = (state.text || "HEY").toUpperCase();
+
+  ctx.clearRect(0, 0, width, height);
+
+  let channelMask = null;
+  let fontSize = 0;
+  let textX = width / 2;
+  let textY = height / 2;
+  let baseSurface = height / 2;
+
+  if (state.mode === "mode4") {
+    fontSize = Math.min(
+      width * 0.88 / Math.max(text.length * 0.68, 1),
+      height * 0.62
+    );
+
+    const key = `${width}:${height}:${text}:${fontSize}`;
+
+    if (!pipeMaskCanvas || pipeMaskKey !== key) {
+      pipeMaskCanvas = document.createElement("canvas");
+      pipeMaskCanvas.width = Math.ceil(width);
+      pipeMaskCanvas.height = Math.ceil(height);
+
+      const maskCtx = pipeMaskCanvas.getContext("2d");
+
+      if (maskCtx) {
+        maskCtx.clearRect(0, 0, width, height);
+        maskCtx.font = `bold ${fontSize}px "Offside", sans-serif`;
+        maskCtx.textAlign = "center";
+        maskCtx.textBaseline = "middle";
+        maskCtx.lineJoin = "round";
+        maskCtx.lineCap = "round";
+        maskCtx.strokeStyle = "#fff";
+        maskCtx.lineWidth = Math.max(10, fontSize * 0.14);
+        maskCtx.strokeText(text, textX, textY);
+      }
+
+      pipeMaskKey = key;
+    }
+
+    channelMask = pipeMaskCanvas;
+    baseSurface = textY + fontSize * 0.12;
+
+    const liquidCanvas = document.createElement("canvas");
+    liquidCanvas.width = Math.ceil(width);
+    liquidCanvas.height = Math.ceil(height);
+
+    const liquidCtx = liquidCanvas.getContext("2d");
+
+    if (liquidCtx) {
+      const cursorActive = pointer.x >= 0 && pointer.y >= 0;
+      const cursorRadius = Math.max(55, fontSize * 0.42);
+
+      const gradient = liquidCtx.createLinearGradient(
+        0,
+        baseSurface - fontSize * 0.3,
+        0,
+        textY + fontSize * 0.4
+      );
+
+      gradient.addColorStop(0, "#FFEAF4");
+      gradient.addColorStop(0.12, "#FF6BBC");
+      gradient.addColorStop(0.55, "#D880B0");
+      gradient.addColorStop(1, "#A18EC8");
+
+      liquidCtx.fillStyle = gradient;
+      liquidCtx.beginPath();
+      liquidCtx.moveTo(0, height);
+
+      for (let x = 0; x <= width; x += 2) {
+        const dx = x - pointer.x;
+
+        const influence = cursorActive
+          ? Math.exp(-(dx * dx) / (cursorRadius * cursorRadius))
+          : 0;
+
+        const cursorPush = influence *
+          clamp(
+            (pointer.y - baseSurface) * 0.65,
+            -fontSize * 0.3,
+            fontSize * 0.3
+          ) *
+          state.speed;
+
+        const wave =
+          Math.sin(x * 0.025 + time * 2.2) * 3 +
+          Math.sin(x * 0.012 - time * 1.5) * 2 +
+          Math.sin(x * 0.055 + time * 3) * 1.2;
+
+        liquidCtx.lineTo(x, baseSurface + wave + cursorPush);
+      }
+
+      liquidCtx.lineTo(width, height);
+      liquidCtx.closePath();
+      liquidCtx.fill();
+
+      liquidCtx.globalCompositeOperation = "destination-in";
+      liquidCtx.drawImage(channelMask, 0, 0);
+      liquidCtx.globalCompositeOperation = "source-over";
+
+      ctx.drawImage(liquidCanvas, 0, 0);
+
+      if (cursorActive) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.rect(0, 0, width, height);
+        ctx.clip();
+
+        ctx.globalCompositeOperation = "destination-in";
+        ctx.drawImage(channelMask, 0, 0);
+        ctx.globalCompositeOperation = "source-over";
+
+        ctx.strokeStyle = "rgba(255,255,255,0.72)";
+        ctx.lineWidth = 1.5;
+
+        for (let i = 0; i < 3; i++) {
+          const radius = ((time * 35 + i * 18) % 45) + 5;
+
+          ctx.beginPath();
+          ctx.ellipse(
+            pointer.x,
+            pointer.y,
+            radius,
+            radius * 0.45,
+            0,
+            0,
+            Math.PI * 2
+          );
+          ctx.stroke();
+        }
+
+        ctx.restore();
+      }
+    }
+  }
+
+  const size = state.size;
+  const halfSize = size / 2;
+
+  for (const p of particles) {
+    const sprite = charCanvases[p.char] || charCanvases["A"];
+    if (!sprite) continue;
+
+    let scale = 1;
+    let floatY = 0;
+
+    if (state.mode === "mode4") {
+      const dx = p.x - pointer.x;
+      const cursorRadius = Math.max(55, fontSize * 0.42);
+
+      const cursorInfluence =
+        pointer.x >= 0 && pointer.y >= 0
+          ? Math.exp(-(dx * dx) / (cursorRadius * cursorRadius))
+          : 0;
+
+      const wave =
+        Math.sin(p.x * 0.025 + time * 2.2) * 3 +
+        Math.sin(p.x * 0.012 - time * 1.5) * 2;
+
+      const localSurface = baseSurface + wave +
+        cursorInfluence *
+        clamp(
+          (pointer.y - baseSurface) * 0.65,
+          -fontSize * 0.3,
+          fontSize * 0.3
+        ) *
+        state.speed;
+
+      const submerged = p.y > localSurface;
+
+      if (submerged) {
+        scale = 1.2 + Math.sin(time * 3 + p.ox * 0.08) * 0.12;
+        floatY = Math.sin(time * 2.5 + p.ox * 0.04) * 2;
+      } else {
+        scale = 1 + Math.sin(time * 2 + p.ox * 0.05) * 0.035;
+        floatY = Math.sin(time * 2 + p.ox * 0.05) * 0.7;
+      }
+
+      scale += cursorInfluence * 0.12 * state.speed;
+
+      if (channelMask) {
+        const px = Math.round(p.x);
+        const py = Math.round(p.y + floatY);
+
+        if (
+          px < 0 ||
+          py < 0 ||
+          px >= channelMask.width ||
+          py >= channelMask.height
+        ) {
+          continue;
+        }
+
+        const maskCtx = channelMask.getContext("2d");
+        const pixel = maskCtx.getImageData(px, py, 1, 1).data;
+
+        if (pixel[3] === 0) continue;
+      }
+    }
+
+    const drawSize = size * scale;
+
+    ctx.drawImage(
+      sprite,
+      p.x - drawSize / 2,
+      p.y - drawSize / 2 + floatY,
+      drawSize,
+      drawSize
+    );
+  }
+}
+
+
+let effectVisible = true;
+let lastFrameTime = 0;
+
+function animate(now = 0) {
+  animationFrame = requestAnimationFrame(animate);
+  if (!effectVisible || document.hidden) return;
+
+  const minFrameGap = EMBED ? 1000 / 30 : 0;
+  if (minFrameGap && now - lastFrameTime < minFrameGap) return;
+  lastFrameTime = now;
+
+  updateEffect();
+  drawEffect();
+}
+
+function resetPointer() {
+  pointer.x = -999;
+  pointer.y = -999;
+}
+
+function updatePointer(x,y) {
+  if (!canvas) return;
+
+  const rect = canvas.getBoundingClientRect();
+  pointer.x = x - rect.left;
+  pointer.y = y - rect.top;
+}
+
+if ($("textInput")) {
+  $("textInput").addEventListener("input",e => {
+    state.text = e.target.value.toUpperCase().slice(0,40);
+    e.target.value = state.text;
+    scheduleEffectRebuild();
+  });
+}
+
+document.querySelectorAll(".color-preset-btn").forEach(button => {
+  button.addEventListener("click",() => {
+    document.querySelectorAll(".color-preset-btn").forEach(b => {
+      b.classList.remove("scale-110");
+    });
+
+    button.classList.add("scale-110");
+    state.color = button.dataset.color;
+
+    if ($("customColorPicker")) {
+      $("customColorPicker").value = state.color;
+    }
+
+    buildCharCache(state.color);
+  });
+});
+
+if ($("customColorPicker")) {
+  $("customColorPicker").addEventListener("input",e => {
+    state.color = e.target.value;
+    buildCharCache(state.color);
+  });
+}
+
+if ($("backgroundTransparentBtn")) {
+  $("backgroundTransparentBtn").addEventListener("click",() => {
+    setBackground("transparent");
+  });
+}
+
+if ($("backgroundDefaultBtn")) {
+  $("backgroundDefaultBtn").addEventListener("click",() => {
+    setBackground("default");
+  });
+}
+
+if ($("backgroundColorPicker")) {
+  $("backgroundColorPicker").addEventListener("input",e => {
+    state.backgroundColor = e.target.value;
+    setBackground("custom");
+  });
+}
+
+document.querySelectorAll(".mode-btn[data-mode]").forEach(button => {
+  button.addEventListener("click",() => {
+    document.querySelectorAll(".mode-btn[data-mode]").forEach(b => {
+      b.classList.remove("active");
+    });
+
+    button.classList.add("active");
+    state.mode = button.dataset.mode;
+  });
+});
+
+let rebuildTimer = 0;
+
+function scheduleEffectRebuild() {
+  clearTimeout(rebuildTimer);
+  rebuildTimer = setTimeout(() => {
+    initEffect();
+    drawEffect();
+  }, 100);
+}
+
+if ($("amountSlider")) {
+  $("amountSlider").addEventListener("input",e => {
+    state.amount = Number(e.target.value);
+    $("amountVal").textContent = state.amount;
+    scheduleEffectRebuild();
+  });
+}
+
+if ($("sizeSlider")) {
+  $("sizeSlider").addEventListener("input",e => {
+    state.size = Number(e.target.value);
+    $("sizeVal").textContent = state.size;
+  });
+}
+
+if ($("speedSlider")) {
+  $("speedSlider").addEventListener("input",e => {
+    state.speed = Number(e.target.value);
+    $("speedVal").textContent = state.speed.toFixed(1);
+  });
+}
+
+if ($("actionBtn")) {
+  $("actionBtn").addEventListener("click",() => {
+    particles.forEach(p => {
+      p.vx += (Math.random() - 0.5) * 35;
+      p.vy += (Math.random() - 0.5) * 35;
+    });
+  });
+}
+
+if ($("resetBtn")) {
+  $("resetBtn").addEventListener("click",() => {
+    state.text = "HEY";
+    state.color = "#000000";
+    state.amount = 50;
+    state.size = 20;
+    state.speed = 1;
+    state.background = "default";
+    state.backgroundColor = "#F87670";
+    state.mode = "mode1";
+
+    if ($("textInput")) $("textInput").value = state.text;
+    if ($("customColorPicker")) $("customColorPicker").value = state.color;
+
+    if ($("amountSlider")) {
+      $("amountSlider").value = state.amount;
+      $("amountVal").textContent = state.amount;
+    }
+
+    if ($("sizeSlider")) {
+      $("sizeSlider").value = state.size;
+      $("sizeVal").textContent = state.size;
+    }
+
+    if ($("speedSlider")) {
+      $("speedSlider").value = state.speed;
+      $("speedVal").textContent = state.speed.toFixed(1);
+    }
+
+    if ($("backgroundColorPicker")) {
+      $("backgroundColorPicker").value = state.backgroundColor;
+    }
+
+    setBackground("default");
+
+    document.querySelectorAll(".mode-btn[data-mode]").forEach(b => {
+      b.classList.toggle("active",b.dataset.mode === state.mode);
+    });
+
+    document.querySelectorAll(".color-preset-btn").forEach(b => {
+      b.classList.toggle("scale-110",b.dataset.color === state.color);
+    });
+
+    initEffect();
+  });
+}
+
+if (canvas) {
+  canvas.addEventListener("mousemove",e => {
+    updatePointer(e.clientX,e.clientY);
+  });
+
+  canvas.addEventListener("mouseleave",resetPointer);
+
+  canvas.addEventListener("mousedown",() => {
+    if ($("instructionBadge")) {
+      $("instructionBadge").style.opacity = "0";
+    }
+  });
+
+  canvas.addEventListener("touchmove",e => {
+    if (!e.touches.length) return;
+
+    updatePointer(
+      e.touches[0].clientX,
+      e.touches[0].clientY
+    );
+  },{passive:true});
+
+  canvas.addEventListener("touchstart",e => {
+    if (!e.touches.length) return;
+
+    updatePointer(
+      e.touches[0].clientX,
+      e.touches[0].clientY
+    );
+
+    if ($("instructionBadge")) {
+      $("instructionBadge").style.opacity = "0";
+    }
+  },{passive:true});
+
+  canvas.addEventListener("touchend",resetPointer,{passive:true});
+}
+
+window.addEventListener("message",e => {
+  const data = e.data;
+  if (!data) return;
+
+  if (data.type === "effect:get-config") {
+    e.source?.postMessage({
+      type:"effect:config-schema",
+      requestId:data.requestId,
+      fields:EFFECT_SCHEMA
+    },"*");
+  }
+
+  if (data.type === "effect:get-state") {
+    e.source?.postMessage({
+      type:"effect:state",
+      requestId:data.requestId,
+      state:{
+        text:state.text,
+        color:state.color,
+        amount:state.amount,
+        size:state.size,
+        speed:state.speed,
+        background:state.background,
+        backgroundColor:state.backgroundColor,
+        mode:state.mode
+      }
+    },"*");
+  }
+
+  if (data.type === "effect:set-state" && data.state) {
+    const incoming = data.state;
+    let rebuild = false;
+
+    if (typeof incoming.text === "string") {
+      state.text = incoming.text.toUpperCase().slice(0,40);
+      if ($("textInput")) $("textInput").value = state.text;
+      rebuild = true;
+    }
+
+    if (typeof incoming.color === "string" && validColor(incoming.color)) {
+      state.color = incoming.color;
+      if ($("customColorPicker")) $("customColorPicker").value = state.color;
+      rebuild = true;
+    }
+
+    if (incoming.amount !== undefined) {
+      const amount = Number(incoming.amount);
+
+      if (Number.isFinite(amount)) {
+        state.amount = clamp(amount,0,100);
+
+        if ($("amountSlider")) {
+          $("amountSlider").value = state.amount;
+          $("amountVal").textContent = state.amount;
+        }
+
+        rebuild = true;
+      }
+    }
+
+    if (incoming.size !== undefined) {
+      const size = Number(incoming.size);
+
+      if (Number.isFinite(size)) {
+        state.size = clamp(size,1,50);
+
+        if ($("sizeSlider")) {
+          $("sizeSlider").value = state.size;
+          $("sizeVal").textContent = state.size;
+        }
+      }
+    }
+
+    if (incoming.speed !== undefined) {
+      const speed = Number(incoming.speed);
+
+      if (Number.isFinite(speed)) {
+        state.speed = clamp(speed,0,2);
+
+        if ($("speedSlider")) {
+          $("speedSlider").value = state.speed;
+          $("speedVal").textContent = state.speed.toFixed(1);
+        }
+      }
+    }
+
+    if (typeof incoming.mode === "string" && ["mode1","mode2","mode3","mode4"].includes(incoming.mode)) {
+      state.mode = incoming.mode;
+      document.querySelectorAll(".mode-btn[data-mode]").forEach(b => {
+        b.classList.toggle("active", b.dataset.mode === state.mode);
+      });
+    }
+
+    if (
+      typeof incoming.backgroundColor === "string" &&
+      validColor(incoming.backgroundColor)
+    ) {
+      state.backgroundColor = incoming.backgroundColor;
+
+      if ($("backgroundColorPicker")) {
+        $("backgroundColorPicker").value = state.backgroundColor;
+      }
+    }
+
+    if (
+      incoming.background !== undefined &&
+      validBackground(incoming.background)
+    ) {
+      const requestedBackground = incoming.background;
+      const hasCustomColor = typeof incoming.backgroundColor === "string" &&
+        validColor(incoming.backgroundColor);
+      setBackground(
+        requestedBackground === "default" && hasCustomColor
+          ? "custom"
+          : requestedBackground
+      );
+    } else if (incoming.backgroundColor !== undefined) {
+      setBackground("custom");
+    }
+
+    if (rebuild) initEffect();
+  }
+});
+
+async function startEffect() {
+  if (initialized) return;
+  initialized = true;
+
+  if (EMBED) {
+    applyEmbedConfig();
+  } else {
+    if ($("backgroundColorPicker")) {
+      $("backgroundColorPicker").value = state.backgroundColor;
+    }
+
+    setBackground("default");
+  }
+
+  try {
+    await document.fonts.load('54px "Offside"');
+    await document.fonts.ready;
+  } catch (error) {
+    console.warn("Font loading fallback:",error);
+  }
+
+  resizeCanvas();
+  animate();
+
+  window.addEventListener("resize",scheduleResize);
+
+  if ("IntersectionObserver" in window && container) {
+    const visibilityObserver = new IntersectionObserver(entries => {
+      effectVisible = entries.some(entry => entry.isIntersecting);
+      if (effectVisible) {
+        lastFrameTime = 0;
+        drawEffect();
+      }
+    });
+    visibilityObserver.observe(container);
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && effectVisible) {
+      lastFrameTime = 0;
+      drawEffect();
+    }
+  });
+
+  if ("ResizeObserver" in window && container) {
+    resizeObserver = new ResizeObserver(() => {
+      scheduleResize();
+    });
+
+    resizeObserver.observe(container);
+  }
+
+  console.log("Mosaic Alphabet ready",{
+    embed:EMBED,
+    text:state.text,
+    canvas:!!canvas
+  });
+}
+
+if (document.readyState === "loading") {
+  window.addEventListener("DOMContentLoaded",startEffect,{once:true});
+} else {
+  startEffect();
+}
+</script>
+
+</body>
+</html>

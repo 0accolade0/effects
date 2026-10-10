@@ -1,0 +1,17 @@
+Done dude 💗 I updated your existing Mosaic Alphabet HTML file and kept its current configuration system.
+
+Download the updated HTML file
+
+It now supports:
+
+Default Blue — the original background.
+
+Transparent — for embedding over your own page.
+
+Custom Color — choose your own background color.
+
+Both background settings are exposed through the existing EFFECT_SCHEMA and effect:get-state / effect:set-state messaging.
+
+The embed reads background and backgroundColor from its URL, so the chosen settings carry over.
+
+I also added a Default button to the existing Background controls. No separate configuration system.

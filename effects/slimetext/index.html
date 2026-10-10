@@ -1,0 +1,1102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Slime FX</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config={theme:{extend:{fontFamily:{display:["Offside","sans-serif"],body:["Offside","sans-serif"]}}}};
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+
+<style>
+* {
+  box-sizing: border-box;
+  font-family: "Offside", sans-serif !important;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  min-height: 100vh;
+  background-color: #E2A1B8;
+  background-image: repeating-linear-gradient(
+    0deg,
+    rgba(0, 0, 0, 0.04) 0px,
+    rgba(0, 0, 0, 0.04) 1px,
+    transparent 1px,
+    transparent 3px
+  );
+  color: #1A1A1A;
+  user-select: none;
+  overflow-x: hidden;
+}
+
+
+/* Main Layout Grid */
+main {
+  display: grid !important;
+  grid-template-columns: minmax(210px, 300px) minmax(380px, 1fr) minmax(210px, 300px);
+  align-items: stretch !important;
+  gap: clamp(12px, 2vw, 20px);
+  width: 100% !important;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 12px clamp(12px, 2vw, 24px) 24px clamp(12px, 2vw, 24px) !important;
+}
+
+main > .left-panel { grid-column: 1; grid-row: 1; width: 100% !important; align-self: center; }
+main > #canvasContainer { grid-column: 2; grid-row: 1; width: 100% !important; height: 100% !important; min-height: 380px !important; }
+main > .right-panel { grid-column: 3; grid-row: 1; width: 100% !important; align-self: center; }
+
+/* Retro Panels */
+.left-panel, .right-panel {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0px #000 !important;
+  border-radius: 6px !important;
+  padding: 16px !important;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.panel-label {
+  font-size: 11px;
+  font-weight: bold;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #000;
+  padding: 2px 4px;
+  border-bottom: 2px solid #000;
+  margin-bottom: 4px;
+}
+
+/* Canvas Container */
+#canvasContainer {
+  background: #5C7A6D !important;
+  border: 2px solid #000 !important;
+  box-shadow: 6px 6px 0px #000 !important;
+  border-radius: 6px !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Uniform Pill / Control Row */
+.uniform-pill {
+  width: 100%;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 6px 12px;
+  background: #EEDFD0 !important;
+  border: 2px solid #000 !important;
+  box-shadow: 2px 2px 0px #000 !important;
+  color: #000 !important;
+  border-radius: 6px !important;
+  transition: background 0.15s, transform 0.1s;
+}
+
+.uniform-pill:hover {
+  background: #FAF2E9 !important;
+}
+
+button.uniform-pill:active {
+  transform: translate(2px, 2px);
+  box-shadow: 0px 0px 0px #000 !important;
+}
+
+/* Mode Buttons */
+.mode-btn {
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: bold;
+  color: #000 !important;
+  border: 1.5px solid transparent;
+  border-radius: 4px !important;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.mode-btn.active {
+  background: #FFD1DF !important;
+  border-color: #000 !important;
+  box-shadow: 1.5px 1.5px 0px #000 !important;
+}
+
+/* Text Input */
+input[type=text] {
+  outline: none;
+  background: #FAF2E9;
+  border: 1.5px solid #000;
+  padding: 3px 8px;
+  border-radius: 4px;
+  color: #000;
+  font-size: 11px;
+  font-weight: bold;
+}
+
+/* Range Sliders */
+input[type=range] {
+  appearance: none;
+  -webkit-appearance: none;
+  background: #D8C4B2;
+  border: 1.5px solid #000;
+  border-radius: 4px;
+  height: 8px;
+  width: 95px;
+  flex-shrink: 1;
+  min-width: 60px;
+}
+
+input[type=range]::-webkit-slider-thumb {
+  appearance: none;
+  -webkit-appearance: none;
+  height: 16px;
+  width: 12px;
+  border-radius: 2px;
+  background: #FFD1DF;
+  border: 1.5px solid #000;
+  cursor: pointer;
+  box-shadow: 1px 1px 0px #000;
+}
+
+input[type=range]::-moz-range-thumb {
+  height: 16px;
+  width: 12px;
+  border-radius: 2px;
+  background: #FFD1DF;
+  border: 1.5px solid #000;
+  cursor: pointer;
+}
+
+.value-box {
+  background: #FAF2E9 !important;
+  border: 1.5px solid #000 !important;
+  padding: 1px 6px !important;
+  border-radius: 4px !important;
+  font-size: 10px;
+  font-weight: bold;
+  color: #000;
+}
+
+.color-preset-btn {
+  border: 1.5px solid #000 !important;
+  box-shadow: 1px 1px 0px #000;
+  transition: transform 0.15s;
+}
+
+.color-preset-btn:hover {
+  transform: scale(1.15);
+}
+
+#customColorPicker {
+  border: 1.5px solid #000 !important;
+  border-radius: 50%;
+}
+
+#instructionBadge > div {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 3px 3px 0px #000 !important;
+  color: #000 !important;
+}
+
+#toast {
+  background: #F4E8DB !important;
+  border: 2px solid #000 !important;
+  box-shadow: 4px 4px 0px #000 !important;
+  color: #000 !important;
+}
+
+#slimeCanvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  cursor: crosshair;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: #E09EB6; }
+::-webkit-scrollbar-thumb { background: #F4E8DB; border: 1.5px solid #000; }
+
+@media(max-width: 1000px) {
+  main {
+    grid-template-columns: 1fr;
+    padding: 12px !important;
+  }
+  main > .left-panel { grid-column: 1; grid-row: 2; }
+  main > #canvasContainer { grid-column: 1; grid-row: 1; min-height: 320px !important; }
+  main > .right-panel { grid-column: 1; grid-row: 3; }
+}
+
+/* Embed Mode Override */
+html.embed-mode, body.embed-mode {
+  background: transparent !important;
+  overflow: hidden !important;
+}
+
+body.embed-mode main {
+  display: block !important;
+  position: fixed !important;
+  inset: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+body.embed-mode main > .left-panel,
+body.embed-mode main > .right-panel,
+body.embed-mode .window-title-bar,
+body.embed-mode header,
+body.embed-mode #instructionBadge,
+body.embed-mode #toast {
+  display: none !important;
+}
+
+body.embed-mode #canvasContainer {
+  position: fixed !important;
+  inset: 0 !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+</style>
+</head>
+
+<body class="flex flex-col relative font-display">
+
+<header class="w-full max-w-[1400px] mx-auto px-6 pt-4 pb-2 relative flex flex-col items-center text-center">
+  
+  </button>
+
+  <h1 class="text-2xl font-bold tracking-tight text-black mb-1">Slime Text</h1>
+  <p class="text-xs max-w-xl text-black/85 font-medium mb-3">
+    Interactive pastel smoke simulation that flows, swirls, and disperses in response to pointer movement.
+  </p>
+
+  <div class="flex flex-wrap items-center justify-center gap-2 text-[10px] font-bold">
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">CATEGORY: Fluid / Particles</span>
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">Canvas</span>
+    <span class="px-2.5 py-0.5 bg-[#F4E8DB] border-2 border-black shadow-[1.5px_1.5px_0px_#000]">JavaScript</span>
+  </div>
+</header>
+
+<main class="relative flex-1 w-full overflow-hidden">
+
+<div class="left-panel z-20 shrink-0">
+  <div class="panel-label">Actions &amp; Modes</div>
+
+  <div class="uniform-pill justify-around p-1">
+    <button data-mode="stretch" class="mode-btn active">Stretch</button>
+    <button data-mode="drip" class="mode-btn">Melt</button>
+    <button data-mode="slash" class="mode-btn">Slash</button>
+  </div>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Text</span>
+    <input type="text" id="textInput" value="SLIME FX" class="w-28 text-right uppercase tracking-wider">
+  </div>
+
+  <button id="burstDripBtn" class="uniform-pill group">
+    <span class="text-xs font-bold">Trigger Melt</span>
+    <svg class="w-4 h-4 group-hover:translate-y-0.5 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+  </button>
+
+  <button id="resetCanvasBtn" class="uniform-pill group">
+    <span class="text-xs font-bold">Reset Slime</span>
+    <svg class="w-4 h-4 group-hover:rotate-180 transition-transform duration-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+  </button>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Color</span>
+    <div class="flex items-center gap-1.5">
+      <button data-color="#FF6BBC" class="color-preset-btn w-5 h-5 rounded-full bg-[#FF6BBC] scale-110"></button>
+      <button data-color="#FF85A1" class="color-preset-btn w-5 h-5 rounded-full bg-[#FF85A1]"></button>
+      <button data-color="#B5838D" class="color-preset-btn w-5 h-5 rounded-full bg-[#B5838D]"></button>
+      <button data-color="#C77DFF" class="color-preset-btn w-5 h-5 rounded-full bg-[#C77DFF]"></button>
+      <input type="color" id="customColorPicker" value="#FF6BBC" class="w-5 h-5 bg-transparent cursor-pointer border-0">
+    </div>
+  </div>
+</div>
+
+<div id="canvasContainer" class="relative flex items-center justify-center">
+  <div id="instructionBadge" class="absolute top-4 left-1/2 -translate-x-1/2 z-20 pointer-events-none transition-opacity duration-700">
+    <div class="px-3 py-1.5 rounded text-xs font-bold text-black flex items-center gap-2">
+      <span class="w-2 h-2 rounded-full bg-[#FF6BBC] animate-ping border border-black"></span>
+      <span>Drag / Sweep cursor across letter edges to pull gooey tendrils!</span>
+    </div>
+  </div>
+
+  <canvas id="slimeCanvas" class="w-full h-full block cursor-crosshair"></canvas>
+  <div class="absolute bottom-0 left-0 right-0 h-[2px] bg-black/40 pointer-events-none"></div>
+</div>
+
+<div class="right-panel z-20 shrink-0">
+  <div class="panel-label">Physics Sliders</div>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Density</span>
+    <div class="flex items-center gap-2">
+      <span id="viscosityVal" class="value-box">0.82</span>
+      <input type="range" id="viscositySlider" min="0.5" max="0.95" step="0.01" value="0.82">
+    </div>
+  </div>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Size</span>
+    <div class="flex items-center gap-2">
+      <span id="tensionVal" class="value-box">0.08</span>
+      <input type="range" id="tensionSlider" min="0.02" max="0.25" step="0.01" value="0.08">
+    </div>
+  </div>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Force</span>
+    <div class="flex items-center gap-2">
+      <span id="gravityVal" class="value-box">0.35</span>
+      <input type="range" id="gravitySlider" min="0" max="1" step="0.05" value="0.35">
+    </div>
+  </div>
+
+  <div class="uniform-pill">
+    <span class="text-xs font-bold">Thickness</span>
+    <div class="flex items-center gap-2">
+      <span id="thicknessVal" class="value-box">14px</span>
+      <input type="range" id="thicknessSlider" min="6" max="32" step="1" value="14">
+    </div>
+  </div>
+</div>
+</main>
+
+<div id="toast" class="fixed top-20 right-6 z-50 px-4 py-3 rounded text-black text-xs font-bold flex items-center gap-2 translate-x-32 opacity-0 transition-all duration-300">
+  <svg class="w-4 h-4 text-black" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+  <span id="toastMsg">Action completed successfully!</span>
+</div>
+
+<script>
+const PARAMS=new URLSearchParams(location.search);
+const EMBED=PARAMS.get("embed")==="true"||PARAMS.get("embed")==="1";
+
+const EFFECT_SCHEMA=[
+{key:"text",label:"Text",type:"text",default:"SLIME FX"},
+{key:"color",label:"Text / Slime Color",type:"color",default:"#FF6BBC"}
+];
+
+const state={
+text:"SLIME FX",
+color:"#FF6BBC",
+accentColor:"#fff",
+viscosity:.82,
+tension:.08,
+gravity:.35,
+thickness:14,
+mode:"stretch",
+maxBreakLength:180,
+dripRate:.02
+};
+
+const $=id=>document.getElementById(id);
+
+function validColor(v){
+return /^#[0-9a-fA-F]{6}$/.test(v||"");
+}
+
+function getEmbedConfig(){
+let text=PARAMS.get("text");
+if(text===null||text==="")text="SLIME FX";
+text=text.toUpperCase();
+let color=PARAMS.get("color")||"#FF6BBC";
+if(!validColor(color))color="#FF6BBC";
+return {text:text||"SLIME FX",color};
+}
+
+const EMBED_CONFIG=getEmbedConfig();
+
+function applyEmbedConfig(){
+if(!EMBED)return;
+document.documentElement.classList.add("embed-mode");
+document.body.classList.add("embed-mode");
+state.text=EMBED_CONFIG.text;
+state.color=EMBED_CONFIG.color;
+$("textInput").value=state.text;
+$("customColorPicker").value=state.color;
+}
+
+class SlimeSoundSynth{
+constructor(){
+this.ctx=null;
+this.enabled=true;
+this.lastPlayTime=0;
+}
+init(){
+if(!this.ctx){
+const A=window.AudioContext||window.webkitAudioContext;
+if(A)this.ctx=new A;
+}
+if(this.ctx&&this.ctx.state==="suspended")this.ctx.resume();
+}
+playSquish(speed=1){
+if(!this.enabled)return;
+this.init();
+if(!this.ctx)return;
+const n=this.ctx.currentTime;
+if(n-this.lastPlayTime<.08)return;
+this.lastPlayTime=n;
+const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+o.type="sine";
+o.frequency.setValueAtTime(280*speed,n);
+o.frequency.exponentialRampToValueAtTime(70*speed,n+.12);
+g.gain.setValueAtTime(.15,n);
+g.gain.exponentialRampToValueAtTime(.001,n+.12);
+o.connect(g);
+g.connect(this.ctx.destination);
+o.start(n);
+o.stop(n+.13);
+}
+playSnap(){
+if(!this.enabled)return;
+this.init();
+if(!this.ctx)return;
+const n=this.ctx.currentTime;
+const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+o.type="triangle";
+o.frequency.setValueAtTime(450,n);
+o.frequency.exponentialRampToValueAtTime(120,n+.06);
+g.gain.setValueAtTime(.2,n);
+g.gain.exponentialRampToValueAtTime(.001,n+.06);
+o.connect(g);
+g.connect(this.ctx.destination);
+o.start(n);
+o.stop(n+.07);
+}
+playDrip(){
+if(!this.enabled)return;
+this.init();
+if(!this.ctx)return;
+const n=this.ctx.currentTime;
+const o=this.ctx.createOscillator(),g=this.ctx.createGain();
+o.type="sine";
+o.frequency.setValueAtTime(350,n);
+o.frequency.exponentialRampToValueAtTime(900,n+.08);
+g.gain.setValueAtTime(.1,n);
+g.gain.exponentialRampToValueAtTime(.001,n+.08);
+o.connect(g);
+g.connect(this.ctx.destination);
+o.start(n);
+o.stop(n+.09);
+}
+}
+
+const soundSynth=new SlimeSoundSynth();
+const canvas=$("slimeCanvas");
+const ctx=canvas.getContext("2d");
+const container=$("canvasContainer");
+const offCanvas=document.createElement("canvas");
+const offCtx=offCanvas.getContext("2d");
+
+let anchorPoints=[];
+let activeTendrils=[];
+let droplets=[];
+let splatters=[];
+let slashTraces=[];
+
+const mouse={
+x:-1000,y:-1000,px:-1000,py:-1000,
+vx:0,vy:0,isDown:false,radius:60
+};
+
+function getOptimalFontSize(text,width,height){
+if(!text)return 20;
+const maxWidth=width*.78;
+const maxHeight=height*.38;
+let fontSize=maxHeight;
+offCtx.font=`900 ${fontSize}px "Offside",sans-serif`;
+const textWidth=offCtx.measureText(text).width;
+if(textWidth>maxWidth&&textWidth>0)fontSize*=maxWidth/textWidth;
+return Math.max(16,fontSize);
+}
+
+function resizeCanvas(){
+const dpr=Math.min(window.devicePixelRatio||1,2);
+const rect=container.getBoundingClientRect();
+if(rect.width<=0||rect.height<=0)return;
+canvas.width=rect.width*dpr;
+canvas.height=rect.height*dpr;
+ctx.setTransform(dpr,0,0,dpr,0,0);
+offCanvas.width=Math.floor(rect.width);
+offCanvas.height=Math.floor(rect.height);
+rebuildTextContourAnchors();
+}
+
+function rebuildTextContourAnchors(){
+const w=offCanvas.width,h=offCanvas.height;
+if(!w||!h)return;
+offCtx.clearRect(0,0,w,h);
+const fontSize=getOptimalFontSize(state.text,w,h);
+offCtx.font=`900 ${fontSize}px "Offside",sans-serif`;
+offCtx.textAlign="center";
+offCtx.textBaseline="middle";
+const cx=w/2,cy=h/2-10;
+offCtx.fillStyle="#fff";
+offCtx.fillText(state.text,cx,cy);
+
+const data=offCtx.getImageData(0,0,w,h).data;
+anchorPoints=[];
+const step=Math.max(5,Math.floor(fontSize/16));
+
+for(let y=step;y<h-step;y+=step){
+for(let x=step;x<w-step;x+=step){
+const i=(y*w+x)*4,a=data[i+3];
+if(a>80){
+const ta=data[((y-step)*w+x)*4+3];
+const ba=data[((y+step)*w+x)*4+3];
+const la=data[(y*w+x-step)*4+3];
+const ra=data[(y*w+x+step)*4+3];
+if(ta<50||ba<50||la<50||ra<50){
+const nx=(la-ra)/255,ny=(ta-ba)/255;
+const len=Math.hypot(nx,ny)||1;
+anchorPoints.push({
+x:x,y:y,
+nx:nx/len,ny:ny/len,
+isBottomEdge:ba<50&&ny>.3,
+activeTendril:null
+});
+}
+}
+}
+}
+}
+
+class Tendril{
+constructor(anchor){
+this.anchor=anchor;
+this.tipX=anchor.x;
+this.tipY=anchor.y;
+this.vx=(Math.random()-.5)*2;
+this.vy=(Math.random()-.5)*2;
+this.ctrlX=anchor.x;
+this.ctrlY=anchor.y;
+this.life=1;
+this.isSnapping=false;
+this.thickness=state.thickness*(.6+Math.random()*.5);
+anchor.activeTendril=this;
+}
+update(){
+const dist=Math.hypot(mouse.x-this.tipX,mouse.y-this.tipY);
+
+if(!this.isSnapping){
+if(dist<mouse.radius&&(mouse.isDown||state.mode==="stretch")){
+const p=.25;
+this.vx+=(mouse.x-this.tipX)*p+mouse.vx*.2;
+this.vy+=(mouse.y-this.tipY)*p+mouse.vy*.2;
+if(Math.hypot(mouse.vx,mouse.vy)>2)
+soundSynth.playSquish(.9+Math.random()*.2);
+}
+
+const dx=this.anchor.x-this.tipX;
+const dy=this.anchor.y-this.tipY;
+const len=Math.hypot(dx,dy);
+
+this.vx+=dx*state.tension;
+this.vy+=dy*state.tension;
+this.vx*=state.viscosity;
+this.vy*=state.viscosity;
+this.tipX+=this.vx;
+this.tipY+=this.vy;
+this.ctrlX=(this.anchor.x+this.tipX)/2+this.vy*1.5;
+this.ctrlY=(this.anchor.y+this.tipY)/2-this.vx*1.5;
+
+if(len>state.maxBreakLength)this.snap();
+}else{
+this.tipX+=(this.anchor.x-this.tipX)*.35;
+this.tipY+=(this.anchor.y-this.tipY)*.35;
+this.ctrlX+=(this.anchor.x-this.ctrlX)*.35;
+this.ctrlY+=(this.anchor.y-this.ctrlY)*.35;
+
+if(Math.hypot(this.anchor.x-this.tipX,this.anchor.y-this.tipY)<5){
+this.anchor.activeTendril=null;
+return false;
+}
+}
+return true;
+}
+
+snap(){
+if(this.isSnapping)return;
+this.isSnapping=true;
+soundSynth.playSnap();
+
+droplets.push(
+new Droplet(
+this.tipX,
+this.tipY,
+this.vx*1.2+(Math.random()-.5)*3,
+this.vy*1.2+(Math.random()-.5)*3,
+this.thickness*.5
+)
+);
+}
+
+draw(c){
+const len=Math.hypot(
+this.tipX-this.anchor.x,
+this.tipY-this.anchor.y
+);
+const ratio=Math.min(len/state.maxBreakLength,1);
+const thickness=Math.max(2,this.thickness*(1-ratio*.65));
+
+c.save();
+c.beginPath();
+c.moveTo(this.anchor.x,this.anchor.y);
+c.quadraticCurveTo(
+this.ctrlX,this.ctrlY,
+this.tipX,this.tipY
+);
+c.lineWidth=thickness;
+c.lineCap="round";
+c.strokeStyle=state.color;
+c.shadowColor=state.color;
+c.shadowBlur=10;
+c.stroke();
+
+c.beginPath();
+c.moveTo(this.anchor.x+1,this.anchor.y-1);
+c.quadraticCurveTo(
+this.ctrlX+1,this.ctrlY-1,
+this.tipX,this.tipY
+);
+c.lineWidth=Math.max(1,thickness*.3);
+c.strokeStyle="rgba(255,255,255,.75)";
+c.shadowBlur=0;
+c.stroke();
+c.restore();
+}
+}
+
+class Droplet{
+constructor(x,y,vx,vy,r){
+this.x=x;
+this.y=y;
+this.vx=vx;
+this.vy=vy;
+this.radius=r||(4+Math.random()*6);
+this.floorY=canvas.height/(window.devicePixelRatio||1)-10;
+this.dead=false;
+}
+update(){
+this.vy+=state.gravity*.5;
+this.vx*=.98;
+this.x+=this.vx;
+this.y+=this.vy;
+
+if(this.y>=this.floorY){
+this.y=this.floorY;
+this.dead=true;
+soundSynth.playDrip();
+splatters.push(
+new Splatter(
+this.x,
+this.floorY,
+this.radius*(1.5+Math.random())
+)
+);
+}
+return !this.dead;
+}
+draw(c){
+c.save();
+const speed=Math.hypot(this.vx,this.vy);
+const angle=Math.atan2(this.vy,this.vx);
+c.translate(this.x,this.y);
+c.rotate(angle);
+c.beginPath();
+c.ellipse(
+0,0,
+this.radius*(1+speed*.08),
+Math.max(2,this.radius*.7),
+0,0,Math.PI*2
+);
+c.fillStyle=state.color;
+c.shadowColor=state.color;
+c.shadowBlur=8;
+c.fill();
+
+c.beginPath();
+c.arc(
+-this.radius*.3,
+-this.radius*.3,
+Math.max(1,this.radius*.3),
+0,Math.PI*2
+);
+c.fillStyle="rgba(255,255,255,.8)";
+c.shadowBlur=0;
+c.fill();
+c.restore();
+}
+}
+
+class Splatter{
+constructor(x,y,r){
+this.x=x;
+this.y=y;
+this.radius=r;
+this.alpha=1;
+this.maxRadius=r*1.8;
+}
+update(){
+if(this.radius<this.maxRadius)this.radius+=.4;
+this.alpha-=.003;
+return this.alpha>0;
+}
+draw(c){
+c.save();
+c.globalAlpha=Math.max(0,this.alpha);
+c.beginPath();
+c.ellipse(
+this.x,
+this.y,
+this.radius,
+this.radius*.3,
+0,0,Math.PI*2
+);
+c.fillStyle=state.color;
+c.shadowColor=state.color;
+c.shadowBlur=6;
+c.fill();
+c.restore();
+}
+}
+
+function createDrip(pt){
+droplets.push(
+new Droplet(
+pt.x,
+pt.y,
+Math.random()-.5,
+1+Math.random()*2,
+4+Math.random()*5
+)
+);
+}
+
+function animate(){
+requestAnimationFrame(animate);
+
+const dpr=window.devicePixelRatio||1;
+const w=canvas.width/dpr;
+const h=canvas.height/dpr;
+
+ctx.clearRect(0,0,w,h);
+
+const fontSize=getOptimalFontSize(state.text,w,h);
+
+ctx.save();
+ctx.font=`900 ${fontSize}px "Offside",sans-serif`;
+ctx.textAlign="center";
+ctx.textBaseline="middle";
+
+const cx=w/2,cy=h/2-10;
+
+ctx.shadowColor=state.color;
+ctx.shadowBlur=25;
+ctx.fillStyle=state.color;
+ctx.fillText(state.text,cx,cy);
+
+ctx.shadowBlur=0;
+ctx.fillStyle="#111";
+ctx.fillText(state.text,cx,cy);
+
+ctx.lineWidth=Math.max(2,fontSize*.03);
+ctx.strokeStyle=state.color;
+ctx.strokeText(state.text,cx,cy);
+
+ctx.lineWidth=Math.max(1,fontSize*.012);
+ctx.strokeStyle="rgba(255,255,255,.8)";
+ctx.strokeText(state.text,cx-1,cy-1);
+ctx.restore();
+
+if(anchorPoints.length){
+for(let i=0;i<anchorPoints.length;i+=2){
+const pt=anchorPoints[i];
+const dist=Math.hypot(mouse.x-pt.x,mouse.y-pt.y);
+
+if(
+dist<mouse.radius&&
+!pt.activeTendril&&
+activeTendrils.length<45&&
+(
+mouse.isDown||
+state.mode==="stretch"||
+Math.hypot(mouse.vx,mouse.vy)>3
+)
+){
+activeTendrils.push(new Tendril(pt));
+}
+
+if(
+state.mode==="drip"&&
+pt.isBottomEdge&&
+Math.random()<state.dripRate*.15
+){
+createDrip(pt);
+}
+}
+}
+
+for(let i=activeTendrils.length-1;i>=0;i--){
+const t=activeTendrils[i];
+if(t.update())t.draw(ctx);
+else activeTendrils.splice(i,1);
+}
+
+for(let i=droplets.length-1;i>=0;i--){
+const d=droplets[i];
+if(d.update())d.draw(ctx);
+else droplets.splice(i,1);
+}
+
+for(let i=splatters.length-1;i>=0;i--){
+const s=splatters[i];
+if(s.update())s.draw(ctx);
+else splatters.splice(i,1);
+}
+
+if(
+state.mode==="slash"&&
+mouse.isDown&&
+slashTraces.length>1
+){
+ctx.save();
+ctx.beginPath();
+ctx.moveTo(slashTraces[0].x,slashTraces[0].y);
+
+for(let i=1;i<slashTraces.length;i++)
+ctx.lineTo(slashTraces[i].x,slashTraces[i].y);
+
+ctx.lineWidth=4;
+ctx.strokeStyle="#fff";
+ctx.shadowColor=state.color;
+ctx.shadowBlur=15;
+ctx.stroke();
+ctx.restore();
+}
+
+mouse.vx*=.5;
+mouse.vy*=.5;
+}
+
+function updatePointerPosition(x,y){
+const r=canvas.getBoundingClientRect();
+const nx=x-r.left;
+const ny=y-r.top;
+
+mouse.vx=nx-mouse.x;
+mouse.vy=ny-mouse.y;
+mouse.px=mouse.x;
+mouse.py=mouse.y;
+mouse.x=nx;
+mouse.y=ny;
+
+if(state.mode==="slash"&&mouse.isDown){
+slashTraces.push({x:nx,y:ny});
+
+if(slashTraces.length>12)
+slashTraces.shift();
+
+if(Math.hypot(mouse.vx,mouse.vy)>5){
+droplets.push(
+new Droplet(
+nx,
+ny,
+mouse.vx*.4+(Math.random()-.5)*4,
+mouse.vy*.4+(Math.random()-.5)*4,
+3+Math.random()*4
+)
+);
+soundSynth.playSquish(1.2);
+}
+}
+}
+
+canvas.addEventListener("mousemove",e=>{
+updatePointerPosition(e.clientX,e.clientY);
+});
+
+canvas.addEventListener("mousedown",e=>{
+mouse.isDown=true;
+slashTraces=[];
+updatePointerPosition(e.clientX,e.clientY);
+$("instructionBadge").style.opacity="0";
+});
+
+window.addEventListener("mouseup",()=>{
+mouse.isDown=false;
+slashTraces=[];
+});
+
+canvas.addEventListener("touchmove",e=>{
+if(e.touches.length){
+updatePointerPosition(
+e.touches[0].clientX,
+e.touches[0].clientY
+);
+}
+},{passive:true});
+
+canvas.addEventListener("touchstart",e=>{
+mouse.isDown=true;
+
+if(e.touches.length){
+updatePointerPosition(
+e.touches[0].clientX,
+e.touches[0].clientY
+);
+}
+
+$("instructionBadge").style.opacity="0";
+},{passive:true});
+
+window.addEventListener("touchend",()=>{
+mouse.isDown=false;
+});
+
+$("textInput").addEventListener("input",e=>{
+state.text=e.target.value.toUpperCase()||"SLIME";
+rebuildTextContourAnchors();
+});
+
+$("viscositySlider").addEventListener("input",e=>{
+state.viscosity=parseFloat(e.target.value);
+$("viscosityVal").textContent=state.viscosity.toFixed(2);
+});
+
+$("tensionSlider").addEventListener("input",e=>{
+state.tension=parseFloat(e.target.value);
+$("tensionVal").textContent=state.tension.toFixed(2);
+});
+
+$("gravitySlider").addEventListener("input",e=>{
+state.gravity=parseFloat(e.target.value);
+state.dripRate=state.gravity*.08;
+$("gravityVal").textContent=state.gravity.toFixed(2);
+});
+
+$("thicknessSlider").addEventListener("input",e=>{
+state.thickness=parseInt(e.target.value);
+$("thicknessVal").textContent=state.thickness+"px";
+});
+
+document.querySelectorAll(".mode-btn").forEach(btn=>{
+btn.addEventListener("click",()=>{
+document.querySelectorAll(".mode-btn").forEach(b=>{
+b.classList.remove("active");
+});
+btn.classList.add("active");
+state.mode=btn.dataset.mode;
+});
+});
+
+document.querySelectorAll(".color-preset-btn").forEach(btn=>{
+btn.addEventListener("click",()=>{
+document.querySelectorAll(".color-preset-btn").forEach(b=>{
+b.classList.remove("scale-110");
+});
+btn.classList.add("scale-110");
+state.color=btn.dataset.color;
+$("customColorPicker").value=state.color;
+});
+});
+
+$("customColorPicker").addEventListener("input",e=>{
+state.color=e.target.value;
+});
+
+$("burstDripBtn").addEventListener("click",()=>{
+soundSynth.playSquish(1.4);
+
+if(anchorPoints.length){
+for(let i=0;i<anchorPoints.length;i+=4){
+const p=anchorPoints[i];
+
+droplets.push(
+new Droplet(
+p.x,
+p.y,
+(Math.random()-.5)*4,
+Math.random()*3,
+4+Math.random()*6
+)
+);
+}
+}
+});
+
+$("resetCanvasBtn").addEventListener("click",()=>{
+activeTendrils=[];
+droplets=[];
+splatters=[];
+rebuildTextContourAnchors();
+});
+
+window.addEventListener("message",e=>{
+const d=e.data;
+if(!d)return;
+
+if(d.type==="effect:get-config"){
+e.source.postMessage({
+type:"effect:config-schema",
+requestId:d.requestId,
+fields:EFFECT_SCHEMA
+},"*");
+}
+
+if(d.type==="effect:get-state"){
+e.source.postMessage({
+type:"effect:state",
+requestId:d.requestId,
+state:{
+text:state.text,
+color:state.color
+}
+},"*");
+}
+
+if(d.type==="effect:set-state"&&d.state){
+
+if(typeof d.state.text==="string"){
+state.text=d.state.text.toUpperCase();
+$("textInput").value=state.text;
+rebuildTextContourAnchors();
+}
+
+if(
+typeof d.state.color==="string"&&
+validColor(d.state.color)
+){
+state.color=d.state.color;
+$("customColorPicker").value=state.color;
+}
+}
+});
+
+window.addEventListener("load",()=>{
+if(EMBED)applyEmbedConfig();
+
+document.fonts.ready.then(()=>{
+window.addEventListener("resize",resizeCanvas);
+resizeCanvas();
+animate();
+});
+});
+</script>
+</body>
+</html>

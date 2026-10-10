@@ -1,0 +1,698 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>YOUR EFFECT NAME</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+
+<style>
+:root{
+  --pink:#D39DB6;
+  --cream:#DECABF;
+  --purple:#A18EC8;
+  --coral:#F87670;
+  --teal:#6D8578;
+  --tan:#F0D1A9;
+  --light-coral:#F88B88;
+  --bright-pink:#FF6BBC;
+  --dark-pink:#D880B0;
+  --outline:#2e1a27;
+  --panel:#F4E8DB;
+  --panel-input:#FAF2E9;
+  --canvas-background:#D39DB6;
+  --embed-background:#D39DB6;
+  --font:"Offside",sans-serif;
+}
+*{box-sizing:border-box;font-family:var(--font)!important}
+html,body{margin:0;padding:0;width:100%;min-height:100%;background:var(--pink);color:var(--outline);user-select:none}
+body{min-height:100vh;overflow-x:hidden}
+button,input,select{font:inherit}
+button{cursor:pointer;-webkit-tap-highlight-color:transparent}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--purple);outline-offset:3px}
+header.page-header{width:100%;max-width:1400px;margin:auto;padding:18px 20px 8px;text-align:center}
+.page-header h1{font-size:clamp(20px,3vw,30px);font-weight:bold;margin:0 0 6px}
+.page-header p{font-size:12px;line-height:1.6;margin:0 auto 12px;max-width:600px}
+.tags{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;font-size:10px;font-weight:bold}
+.tag{padding:4px 9px;background:var(--panel);border:2px solid var(--outline);box-shadow:2px 2px 0 var(--outline)}
+main{
+  display:grid;
+  grid-template-columns:minmax(200px,280px) minmax(0,1fr) minmax(200px,280px);
+  align-items:stretch;
+  gap:clamp(12px,2vw,20px);
+  width:100%;
+  max-width:1400px;
+  margin:auto;
+  padding:12px 20px 24px;
+}
+.left-panel,.right-panel{
+  min-width:0;
+  align-self:center;
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  padding:15px;
+  background:var(--panel);
+  border:2px solid var(--outline);
+  box-shadow:4px 4px 0 var(--outline);
+}
+.panel-label{font-size:11px;font-weight:bold;letter-spacing:.1em;text-transform:uppercase;padding:2px 4px 8px;border-bottom:2px solid var(--outline);margin-bottom:4px}
+.uniform-pill{
+  width:100%;min-height:40px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 10px;background:#EEDFD0;border:2px solid var(--outline);box-shadow:2px 2px 0 var(--outline);
+  color:var(--outline);font-size:12px;
+}
+button.uniform-pill{transition:background .15s,transform .1s}
+button.uniform-pill:hover{background:#FAF2E9}
+button.uniform-pill:active{transform:translate(2px,2px);box-shadow:none}
+.field-name{font-size:11px;font-weight:bold;flex-shrink:0}
+.mode-row{justify-content:space-around;padding:5px;gap:4px}
+.mode-btn{padding:5px 8px;font-size:10px;font-weight:bold;color:var(--outline);border:1.5px solid transparent;background:transparent}
+.mode-btn.active{background:#FFD1DF;border-color:var(--outline);box-shadow:1.5px 1.5px 0 var(--outline)}
+input[type="text"]{width:120px;min-width:0;padding:5px 7px;background:var(--panel-input);border:1.5px solid var(--outline);color:var(--outline);font-size:11px;text-align:right}
+.range-control{display:flex;align-items:center;justify-content:flex-end;gap:8px;min-width:0}
+input[type="range"]{appearance:none;-webkit-appearance:none;width:100px;min-width:55px;height:8px;background:#D8C4B2;border:1.5px solid var(--outline);flex-shrink:1}
+input[type="range"]::-webkit-slider-thumb{appearance:none;width:12px;height:16px;background:#FFD1DF;border:1.5px solid var(--outline);box-shadow:1px 1px 0 var(--outline);cursor:pointer}
+input[type="range"]::-moz-range-thumb{width:12px;height:16px;background:#FFD1DF;border:1.5px solid var(--outline);cursor:pointer}
+.value-box{min-width:34px;padding:3px 5px;text-align:center;background:var(--panel-input);border:1.5px solid var(--outline);font-size:10px;font-weight:bold}
+.color-row{display:flex;align-items:center;gap:7px}
+.color-preset-btn{width:20px;height:20px;padding:0;border:1.5px solid var(--outline);box-shadow:1px 1px 0 var(--outline);border-radius:50%;flex-shrink:0}
+.color-preset-btn.active{outline:2px solid var(--outline);outline-offset:2px}
+input[type="color"]{appearance:none;-webkit-appearance:none;width:23px;height:23px;padding:0;border:1.5px solid var(--outline);border-radius:50%;background:transparent;overflow:hidden;cursor:pointer;flex-shrink:0}
+input[type="color"]::-webkit-color-swatch-wrapper{padding:0}
+input[type="color"]::-webkit-color-swatch{border:0;border-radius:50%}
+input[type="color"]::-moz-color-swatch{border:0;border-radius:50%}
+#canvasContainer{
+  position:relative;width:100%;min-width:0;min-height:380px;aspect-ratio:4/3;align-self:center;
+  overflow:hidden;background:var(--canvas-background);border:2px solid var(--outline);box-shadow:6px 6px 0 var(--outline);isolation:isolate;
+}
+#effectCanvas{display:block;width:100%;height:100%;touch-action:pan-y}
+#instructionBadge{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:2;pointer-events:none;transition:opacity .5s;white-space:nowrap}
+#instructionBadge>div{display:flex;align-items:center;gap:8px;padding:7px 10px;background:var(--panel);border:2px solid var(--outline);box-shadow:3px 3px 0 var(--outline);font-size:11px;font-weight:bold}
+.instruction-dot{width:8px;height:8px;border-radius:50%;background:var(--bright-pink);border:1px solid var(--outline);animation:pulse 1.5s infinite}
+@keyframes pulse{50%{opacity:.3;transform:scale(.7)}}
+#toast{position:fixed;top:20px;right:20px;z-index:100;padding:12px 16px;background:var(--panel);border:2px solid var(--outline);box-shadow:4px 4px 0 var(--outline);font-size:12px;font-weight:bold;opacity:0;transform:translateX(130%);transition:.25s;pointer-events:none}
+#toast.show{opacity:1;transform:translateX(0)}
+#backgroundColorPicker{display:none}
+body.background-custom #backgroundColorPicker{display:block}
+body.background-transparent #canvasContainer{background:transparent}
+body.embed-mode,html.embed-mode{width:100%;height:100%;min-height:0;margin:0;padding:0;overflow:hidden;background:transparent!important}
+body.embed-mode .page-header,body.embed-mode .left-panel,body.embed-mode .right-panel,body.embed-mode #instructionBadge,body.embed-mode #toast{display:none!important}
+body.embed-mode main{display:block;position:fixed;inset:0;width:100%;height:100%;max-width:none;margin:0;padding:0}
+body.embed-mode #canvasContainer{position:absolute;inset:0;width:100%;height:100%;min-height:0;aspect-ratio:auto;border:0;box-shadow:none;border-radius:0;background:var(--embed-background);overflow:hidden}
+body.embed-mode.background-transparent #canvasContainer{background:transparent!important}
+body.embed-mode.background-custom #canvasContainer{background:var(--embed-background)!important}
+@media(max-width:1000px){
+  main{grid-template-columns:minmax(0,1fr);padding:12px 16px 24px}
+  #canvasContainer{grid-row:1;min-height:300px}
+  .left-panel{grid-row:2}
+  .right-panel{grid-row:3}
+  .left-panel,.right-panel{align-self:stretch}
+}
+@media(max-width:500px){
+  header.page-header{padding:14px 12px 6px}
+  main{padding:10px 12px 20px;gap:14px}
+  #canvasContainer{min-height:250px}
+  .left-panel,.right-panel{padding:12px}
+  input[type="range"]{width:110px}
+}
+@media(prefers-reduced-motion:reduce){.instruction-dot{animation:none}*{scroll-behavior:auto!important}}
+</style>
+</head>
+
+<body>
+<header class="page-header">
+  <h1>YOUR EFFECT NAME</h1>
+  <p>Describe what your effect does and what people can interact with.</p>
+  <div class="tags">
+    <span class="tag">CATEGORY: YOUR CATEGORY</span>
+    <span class="tag">CANVAS</span>
+    <span class="tag">JAVASCRIPT</span>
+  </div>
+</header>
+
+<main>
+  <section class="left-panel">
+    <div class="panel-label">Actions &amp; Modes</div>
+
+    <div class="uniform-pill mode-row">
+      <button type="button" data-mode="mode1" class="mode-btn active">Mode 1</button>
+      <button type="button" data-mode="mode2" class="mode-btn">Mode 2</button>
+      <button type="button" data-mode="mode3" class="mode-btn">Mode 3</button>
+    </div>
+
+    <label class="uniform-pill">
+      <span class="field-name">Text</span>
+      <input id="textInput" type="text" maxlength="80" value="YOUR EFFECT" placeholder="Type your text">
+    </label>
+
+    <button type="button" id="actionBtn" class="uniform-pill">
+      <span class="field-name">Trigger Effect</span><span>→</span>
+    </button>
+
+    <button type="button" id="resetBtn" class="uniform-pill">
+      <span class="field-name">Reset</span><span>↻</span>
+    </button>
+
+    <div class="uniform-pill">
+      <span class="field-name">Effect Color</span>
+      <div class="color-row">
+        <button type="button" class="color-preset-btn active" data-color="#FF6BBC" style="background:#FF6BBC" aria-label="Pink"></button>
+        <button type="button" class="color-preset-btn" data-color="#F87670" style="background:#F87670" aria-label="Coral"></button>
+        <button type="button" class="color-preset-btn" data-color="#A18EC8" style="background:#A18EC8" aria-label="Purple"></button>
+        <input id="customColorPicker" type="color" value="#FF6BBC" aria-label="Custom effect color">
+      </div>
+    </div>
+  </section>
+
+  <div id="canvasContainer">
+    <div id="instructionBadge">
+      <div><span class="instruction-dot"></span><span>Interact with the effect</span></div>
+    </div>
+    <canvas id="effectCanvas"></canvas>
+  </div>
+
+  <section class="right-panel">
+    <div class="panel-label">Effect Settings</div>
+
+    <label class="uniform-pill">
+      <span class="field-name">Amount</span>
+      <span class="range-control">
+        <span id="amountVal" class="value-box">50</span>
+        <input type="range" id="amountSlider" min="0" max="100" step="1" value="50">
+      </span>
+    </label>
+
+    <label class="uniform-pill">
+      <span class="field-name">Size</span>
+      <span class="range-control">
+        <span id="sizeVal" class="value-box">20</span>
+        <input type="range" id="sizeSlider" min="1" max="50" step="1" value="20">
+      </span>
+    </label>
+
+    <label class="uniform-pill">
+      <span class="field-name">Speed</span>
+      <span class="range-control">
+        <span id="speedVal" class="value-box">1.0</span>
+        <input type="range" id="speedSlider" min="0" max="2" step="0.1" value="1">
+      </span>
+    </label>
+
+    <div class="uniform-pill">
+      <span class="field-name">Background</span>
+      <div class="color-row">
+        <button type="button" id="backgroundDefaultBtn" class="mode-btn active">Default</button>
+        <button type="button" id="backgroundTransparentBtn" class="mode-btn">Clear</button>
+        <input type="color" id="backgroundColorPicker" value="#D39DB6" aria-label="Custom background color">
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast"><span id="toastMsg">Done!</span></div>
+
+<script>
+const PARAMS=new URLSearchParams(location.search);
+const EMBED=["1","true"].includes(PARAMS.get("embed"));
+const $=id=>document.getElementById(id);
+
+const DEFAULTS={
+  text:"YOUR EFFECT",
+  color:"#FF6BBC",
+  amount:50,
+  size:20,
+  speed:1,
+  mode:"mode1",
+  background:"default",
+  backgroundColor:"#D39DB6"
+};
+
+const EFFECT_SCHEMA=[
+  {key:"text",label:"Text",type:"text",default:DEFAULTS.text,placeholder:"Type your text"},
+  {key:"color",label:"Effect Color",type:"color",default:DEFAULTS.color},
+  {key:"amount",label:"Amount",type:"range",default:DEFAULTS.amount,min:0,max:100,step:1},
+  {key:"size",label:"Size",type:"range",default:DEFAULTS.size,min:1,max:50,step:1},
+  {key:"speed",label:"Speed",type:"range",default:DEFAULTS.speed,min:0,max:2,step:0.1},
+  {key:"mode",label:"Mode",type:"select",default:DEFAULTS.mode,options:[
+    {value:"mode1",label:"Mode 1"},
+    {value:"mode2",label:"Mode 2"},
+    {value:"mode3",label:"Mode 3"}
+  ]},
+  {key:"background",label:"Background",type:"select",default:DEFAULTS.background,options:[
+    {value:"default",label:"Default Pink"},
+    {value:"transparent",label:"Transparent"},
+    {value:"custom",label:"Custom Color"}
+  ]},
+  {key:"backgroundColor",label:"Custom Background Color",type:"color",default:DEFAULTS.backgroundColor}
+];
+
+const state={...DEFAULTS};
+const pointer={x:0,y:0,px:0,py:0,vx:0,vy:0,down:false,inside:false};
+const canvas=$("effectCanvas");
+const ctx=canvas.getContext("2d");
+const container=$("canvasContainer");
+
+let width=0,height=0,dpr=1,animationFrame=0,lastTime=0,elapsed=0,toastTimer=0;
+let effectItems=[];
+
+function validColor(value){
+  return /^#[0-9a-fA-F]{6}$/.test(String(value||""));
+}
+
+function clamp(value,min,max){
+  return Math.min(max,Math.max(min,value));
+}
+
+function cleanText(value){
+  return String(value??"").slice(0,80);
+}
+
+function getParamText(key,fallback){
+  const value=PARAMS.get(key);
+  return value===null?fallback:value;
+}
+
+function getNumberParam(key,fallback,min,max){
+  const raw=PARAMS.get(key);
+  if(raw===null||raw.trim()==="")return fallback;
+  const value=Number(raw);
+  return Number.isFinite(value)?clamp(value,min,max):fallback;
+}
+
+function getInitialConfig(){
+  let text=getParamText("text",DEFAULTS.text);
+  let color=PARAMS.get("color")||DEFAULTS.color;
+  let mode=PARAMS.get("mode")||DEFAULTS.mode;
+  let background=PARAMS.get("background")||DEFAULTS.background;
+  let backgroundColor=PARAMS.get("backgroundColor")||DEFAULTS.backgroundColor;
+
+  if(!validColor(color))color=DEFAULTS.color;
+  if(!["mode1","mode2","mode3"].includes(mode))mode=DEFAULTS.mode;
+  if(!["default","transparent","custom"].includes(background))background=DEFAULTS.background;
+  if(!validColor(backgroundColor))backgroundColor=DEFAULTS.backgroundColor;
+
+  return {
+    text:cleanText(text),
+    color,
+    amount:getNumberParam("amount",DEFAULTS.amount,0,100),
+    size:getNumberParam("size",DEFAULTS.size,1,50),
+    speed:getNumberParam("speed",DEFAULTS.speed,0,2),
+    mode,
+    background,
+    backgroundColor
+  };
+}
+
+function getState(){
+  return {
+    text:state.text,
+    color:state.color,
+    amount:state.amount,
+    size:state.size,
+    speed:state.speed,
+    mode:state.mode,
+    background:state.background,
+    backgroundColor:state.backgroundColor
+  };
+}
+
+function setBackground(mode,color=state.backgroundColor){
+  if(!["default","transparent","custom"].includes(mode))mode="default";
+  if(validColor(color))state.backgroundColor=color;
+  state.background=mode;
+
+  document.body.classList.toggle("background-transparent",mode==="transparent");
+  document.body.classList.toggle("background-custom",mode==="custom");
+
+  let actualBackground=mode==="transparent"
+    ?"transparent"
+    :mode==="custom"
+      ?state.backgroundColor
+      :DEFAULTS.backgroundColor;
+
+  document.documentElement.style.setProperty("--canvas-background",actualBackground);
+  document.documentElement.style.setProperty("--embed-background",actualBackground);
+
+  $("backgroundDefaultBtn").classList.toggle("active",mode==="default");
+  $("backgroundTransparentBtn").classList.toggle("active",mode==="transparent");
+  $("backgroundColorPicker").value=state.backgroundColor;
+
+  if(EMBED){
+    document.documentElement.style.background="transparent";
+    document.body.style.background="transparent";
+    document.body.style.backgroundImage="none";
+  }else{
+    document.documentElement.style.background=DEFAULTS.backgroundColor;
+    document.body.style.background=DEFAULTS.backgroundColor;
+  }
+}
+
+function syncControls(){
+  $("textInput").value=state.text;
+  $("customColorPicker").value=state.color;
+  $("amountSlider").value=state.amount;
+  $("sizeSlider").value=state.size;
+  $("speedSlider").value=state.speed;
+  $("amountVal").textContent=state.amount;
+  $("sizeVal").textContent=state.size;
+  $("speedVal").textContent=Number(state.speed).toFixed(1);
+
+  document.querySelectorAll("[data-mode]").forEach(button=>{
+    button.classList.toggle("active",button.dataset.mode===state.mode);
+  });
+
+  document.querySelectorAll(".color-preset-btn").forEach(button=>{
+    button.classList.toggle("active",button.dataset.color.toLowerCase()===state.color.toLowerCase());
+  });
+
+  setBackground(state.background,state.backgroundColor);
+}
+
+function applyState(nextState={},resetEffect=false){
+  if(typeof nextState.text==="string")state.text=cleanText(nextState.text);
+  if(validColor(nextState.color))state.color=nextState.color;
+
+  if(nextState.amount!==undefined&&Number.isFinite(Number(nextState.amount))){
+    state.amount=clamp(Number(nextState.amount),0,100);
+  }
+
+  if(nextState.size!==undefined&&Number.isFinite(Number(nextState.size))){
+    state.size=clamp(Number(nextState.size),1,50);
+  }
+
+  if(nextState.speed!==undefined&&Number.isFinite(Number(nextState.speed))){
+    state.speed=clamp(Number(nextState.speed),0,2);
+  }
+
+  if(["mode1","mode2","mode3"].includes(nextState.mode))state.mode=nextState.mode;
+  if(["default","transparent","custom"].includes(nextState.background))state.background=nextState.background;
+  if(validColor(nextState.backgroundColor))state.backgroundColor=nextState.backgroundColor;
+
+  syncControls();
+  if(resetEffect)initEffect();
+  onSettingsChanged();
+}
+
+function resizeCanvas(){
+  const rect=container.getBoundingClientRect();
+  if(rect.width<=0||rect.height<=0)return;
+
+  dpr=Math.min(window.devicePixelRatio||1,2);
+  width=rect.width;
+  height=rect.height;
+
+  canvas.width=Math.round(width*dpr);
+  canvas.height=Math.round(height*dpr);
+  canvas.style.width=width+"px";
+  canvas.style.height=height+"px";
+
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  onResize();
+}
+
+function onResize(){}
+
+/* EFFECT LOGIC: CUSTOMIZE THESE FUNCTIONS FOR EACH NEW EFFECT. */
+
+function initEffect(){
+  effectItems=[];
+  const count=Math.round(state.amount);
+  for(let i=0;i<count;i++){
+    effectItems.push({
+      x:Math.random()*Math.max(width,1),
+      y:Math.random()*Math.max(height,1),
+      phase:Math.random()*Math.PI*2,
+      radius:0.5+Math.random()*1.5,
+      drift:0.3+Math.random()
+    });
+  }
+}
+
+function updateEffect(dt){
+  const factor=dt*state.speed;
+  for(const item of effectItems){
+    item.phase+=factor*item.drift;
+    item.x+=Math.cos(item.phase)*factor*8;
+    item.y+=Math.sin(item.phase)*factor*8;
+
+    if(item.x<-10)item.x=width+10;
+    if(item.x>width+10)item.x=-10;
+    if(item.y<-10)item.y=height+10;
+    if(item.y>height+10)item.y=-10;
+
+    if(pointer.inside){
+      const dx=item.x-pointer.x;
+      const dy=item.y-pointer.y;
+      const distance=Math.hypot(dx,dy);
+      if(pointer.down&&distance>0&&distance<90){
+        item.x+=dx/distance*factor*15;
+        item.y+=dy/distance*factor*15;
+      }
+    }
+  }
+}
+
+function drawEffect(){
+  ctx.clearRect(0,0,width,height);
+
+  const color=state.color;
+  const size=state.size;
+
+  for(const item of effectItems){
+    const pulse=0.65+Math.sin(item.phase)*0.35;
+    ctx.globalAlpha=0.25+pulse*0.75;
+    ctx.fillStyle=color;
+    ctx.beginPath();
+    ctx.arc(item.x,item.y,Math.max(1,size*0.12*item.radius),0,Math.PI*2);
+    ctx.fill();
+  }
+
+  ctx.globalAlpha=1;
+  const text=state.text||"";
+  if(text){
+    const fontSize=Math.max(12,size*1.7);
+    ctx.font=`bold ${fontSize}px Offside, sans-serif`;
+    ctx.textAlign="center";
+    ctx.textBaseline="middle";
+
+    if(state.mode==="mode1"){
+      ctx.fillStyle=color;
+      ctx.fillText(text,width/2,height/2);
+    }else if(state.mode==="mode2"){
+      ctx.lineWidth=Math.max(1,size/8);
+      ctx.strokeStyle=color;
+      ctx.strokeText(text,width/2,height/2);
+    }else{
+      ctx.fillStyle=color;
+      const spacing=Math.max(1,size/3);
+      for(let i=0;i<text.length;i++){
+        const character=text[i];
+        const x=width/2-(ctx.measureText(text).width/2)+ctx.measureText(text.slice(0,i)).width;
+        const y=height/2+Math.sin(elapsed*state.speed+i*spacing*.1)*size;
+        ctx.fillText(character,x,y);
+      }
+    }
+  }
+}
+
+/* SHARED ANIMATION LOOP */
+
+function animate(timestamp=0){
+  animationFrame=requestAnimationFrame(animate);
+  const dt=lastTime?Math.min((timestamp-lastTime)/1000,0.05):0;
+  lastTime=timestamp;
+  elapsed+=dt;
+  updateEffect(dt);
+  drawEffect();
+}
+
+/* SHARED CONTROLS */
+
+function onSettingsChanged(){
+  if(!EMBED){
+    // Keep this hook for effect-specific live setting updates.
+  }
+}
+
+$("textInput").addEventListener("input",e=>{
+  state.text=cleanText(e.target.value);
+  onSettingsChanged();
+});
+
+document.querySelectorAll(".color-preset-btn").forEach(button=>{
+  button.addEventListener("click",()=>{
+    state.color=button.dataset.color;
+    syncControls();
+    onSettingsChanged();
+  });
+});
+
+$("customColorPicker").addEventListener("input",e=>{
+  if(validColor(e.target.value)){
+    state.color=e.target.value;
+    syncControls();
+    onSettingsChanged();
+  }
+});
+
+document.querySelectorAll("[data-mode]").forEach(button=>{
+  button.addEventListener("click",()=>{
+    state.mode=button.dataset.mode;
+    syncControls();
+    onSettingsChanged();
+  });
+});
+
+[
+  ["amountSlider","amount","amountVal",value=>String(value)],
+  ["sizeSlider","size","sizeVal",value=>String(value)],
+  ["speedSlider","speed","speedVal",value=>Number(value).toFixed(1)]
+].forEach(([id,key,valueId,format])=>{
+  $(id).addEventListener("input",e=>{
+    state[key]=Number(e.target.value);
+    $(valueId).textContent=format(state[key]);
+    onSettingsChanged();
+  });
+});
+
+$("backgroundDefaultBtn").addEventListener("click",()=>{
+  setBackground("default");
+  onSettingsChanged();
+});
+
+$("backgroundTransparentBtn").addEventListener("click",()=>{
+  setBackground("transparent");
+  onSettingsChanged();
+});
+
+$("backgroundColorPicker").addEventListener("input",e=>{
+  if(!validColor(e.target.value))return;
+  state.backgroundColor=e.target.value;
+  setBackground("custom",state.backgroundColor);
+  onSettingsChanged();
+});
+
+$("actionBtn").addEventListener("click",()=>{
+  triggerEffect();
+});
+
+function triggerEffect(){
+  initEffect();
+  showToast("Effect triggered!");
+}
+
+$("resetBtn").addEventListener("click",()=>{
+  applyState({...DEFAULTS},true);
+  showToast("Settings reset!");
+});
+
+function showToast(message){
+  const toast=$("toast");
+  $("toastMsg").textContent=message;
+  toast.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>toast.classList.remove("show"),1600);
+}
+
+/* POINTER HELPERS */
+
+function updatePointer(clientX,clientY){
+  const rect=canvas.getBoundingClientRect();
+  const x=clientX-rect.left;
+  const y=clientY-rect.top;
+
+  pointer.px=pointer.x;
+  pointer.py=pointer.y;
+  pointer.x=x;
+  pointer.y=y;
+  pointer.vx=pointer.x-pointer.px;
+  pointer.vy=pointer.y-pointer.py;
+  pointer.inside=x>=0&&y>=0&&x<=rect.width&&y<=rect.height;
+}
+
+canvas.addEventListener("pointerenter",e=>{
+  pointer.inside=true;
+  updatePointer(e.clientX,e.clientY);
+});
+
+canvas.addEventListener("pointermove",e=>{
+  updatePointer(e.clientX,e.clientY);
+  if(!EMBED)$("instructionBadge").style.opacity="0";
+});
+
+canvas.addEventListener("pointerdown",e=>{
+  pointer.down=true;
+  updatePointer(e.clientX,e.clientY);
+  if(!EMBED)$("instructionBadge").style.opacity="0";
+  if(canvas.setPointerCapture){
+    try{canvas.setPointerCapture(e.pointerId)}catch(error){}
+  }
+});
+
+window.addEventListener("pointerup",()=>pointer.down=false);
+canvas.addEventListener("pointerleave",()=>{pointer.inside=false});
+
+/* COLLECTION EMBED PROTOCOL */
+
+window.addEventListener("message",e=>{
+  const data=e.data;
+  if(!data||typeof data!=="object")return;
+
+  if(data.type==="effect:get-config"){
+    e.source?.postMessage({
+      type:"effect:config-schema",
+      requestId:data.requestId,
+      fields:EFFECT_SCHEMA
+    },"*");
+  }
+
+  if(data.type==="effect:get-state"){
+    e.source?.postMessage({
+      type:"effect:state",
+      requestId:data.requestId,
+      state:getState()
+    },"*");
+  }
+
+  if(data.type==="effect:set-state"&&data.state){
+    applyState(data.state);
+  }
+});
+
+/* STARTUP */
+
+function startEffect(){
+  if(EMBED){
+    document.documentElement.classList.add("embed-mode");
+    document.body.classList.add("embed-mode");
+  }
+
+  applyState(getInitialConfig(),true);
+
+  if(EMBED){
+    $("instructionBadge").style.display="none";
+    $("toast").style.display="none";
+  }
+
+  if("ResizeObserver" in window){
+    new ResizeObserver(resizeCanvas).observe(container);
+  }else{
+    window.addEventListener("resize",resizeCanvas);
+  }
+
+  document.fonts.ready.then(()=>{
+    resizeCanvas();
+    initEffect();
+    if(!animationFrame)animate();
+    console.log("EFFECT READY",getState());
+  });
+}
+
+startEffect();
+</script>
+</body>
+</html>

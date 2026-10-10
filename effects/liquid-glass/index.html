@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{background:radial-gradient(circle at 50% 45%,#ffeaf2 0%,#ffd8e7 50%,#f6c4d8 100%);font-family:Offside,Arial,sans-serif}
+canvas{position:fixed;inset:0;width:100%;height:100%;display:block}
+#scene{z-index:1}
+#lensCanvas{z-index:5;pointer-events:none}
+#glass{position:fixed;width:300px;height:200px;left:22%;top:28%;transform:translate(-50%,-50%);border-radius:24px;background:transparent;border:1px solid rgba(255,255,255,.72);box-shadow:inset 0 1px 1px rgba(255,255,255,.8),inset 0 -1px 1px rgba(255,255,255,.12),0 15px 40px rgba(150,80,110,.06);cursor:grab;touch-action:none;z-index:10}
+#glass:active{cursor:grabbing}
+</style>
+</head>
+<body>
+
+<canvas id="scene"></canvas>
+<canvas id="lensCanvas"></canvas>
+<div id="glass"></div>
+
+<script>
+const CONFIG={
+  glass:{width:300,height:200,startX:.22,startY:.28},
+  background:["#ffeaf2","#ffd8e7","#f6c4d8"],
+  palette:["#D39DB6","#DECABF","#A18EC8","#F87670","#6D8578","#F0D1A9","#F88B88","#FF6BBC","#D880B0"],
+  texts:[
+    {key:"text1",text:"hello",x:.76,y:.22,size:90},
+    {key:"text2",text:"this is so cool",x:.30,y:.23,size:42},
+    {key:"text3",text:"nice",x:.17,y:.65,size:58},
+    {key:"text4",text:"awesome",x:.80,y:.48,size:50},
+    {key:"text5",text:"liquid",x:.46,y:.72,size:72},
+    {key:"text6",text:"glass",x:.82,y:.78,size:64},
+    {key:"text7",text:"wow",x:.22,y:.38,size:48},
+    {key:"text8",text:"hello again",x:.55,y:.38,size:38},
+    {key:"text9",text:"magic",x:.63,y:.88,size:46},
+    {key:"text10",text:"tired",x:.08,y:.86,size:44}
+  ]
+};
+
+const EFFECT_SCHEMA=CONFIG.texts.map((t,i)=>({
+  key:t.key,
+  label:`Text ${i+1}`,
+  type:"text",
+  default:t.text,
+  placeholder:`Enter text ${i+1}`
+}));
+
+const sceneCanvas=document.getElementById("scene"),
+lensCanvas=document.getElementById("lensCanvas"),
+scene=sceneCanvas.getContext("2d",{willReadFrequently:true}),
+lens=lensCanvas.getContext("2d"),
+glass=document.getElementById("glass"),
+sourceCanvas=document.createElement("canvas"),
+source=sourceCanvas.getContext("2d",{willReadFrequently:true});
+
+let lensX=0,lensY=0,dragging=false,grabOffsetX=0,grabOffsetY=0,lastX=0,lastY=0,velocityX=0,velocityY=0,texts=[];
+
+function getConfig(){
+  const p=new URLSearchParams(location.search);
+  CONFIG.texts.forEach(t=>{
+    const v=p.get(t.key);
+    if(v!==null)t.text=v;
+  });
+}
+
+window.addEventListener("message",e=>{
+  const d=e.data;
+  if(!d)return;
+
+  if(d.type==="effect:get-config"){
+    parent.postMessage({
+      type:"effect:config-schema",
+      requestId:d.requestId,
+      fields:EFFECT_SCHEMA
+    },"*");
+  }
+
+  if(d.type==="effect:get-state"){
+    const state={};
+    CONFIG.texts.forEach(t=>state[t.key]=t.text);
+    parent.postMessage({
+      type:"effect:state",
+      requestId:d.requestId,
+      state
+    },"*");
+  }
+});
+
+getConfig();
+
+function resize(){
+  const w=innerWidth,h=innerHeight;
+  sceneCanvas.width=lensCanvas.width=sourceCanvas.width=w;
+  sceneCanvas.height=lensCanvas.height=sourceCanvas.height=h;
+  glass.style.width=CONFIG.glass.width+"px";
+  glass.style.height=CONFIG.glass.height+"px";
+  texts=CONFIG.texts.map((t,i)=>({...t,x:t.x*w,y:t.y*h,color:CONFIG.palette[i%CONFIG.palette.length]}));
+  lensX=w*CONFIG.glass.startX;
+  lensY=h*CONFIG.glass.startY;
+  glass.style.left=lensX+"px";
+  glass.style.top=lensY+"px";
+  drawScene();
+}
+
+function drawScene(){
+  const w=sceneCanvas.width,h=sceneCanvas.height;
+  scene.clearRect(0,0,w,h);
+
+  const g=scene.createRadialGradient(w*.5,h*.45,0,w*.5,h*.45,Math.max(w,h)*.75);
+  g.addColorStop(0,CONFIG.background[0]);
+  g.addColorStop(.5,CONFIG.background[1]);
+  g.addColorStop(1,CONFIG.background[2]);
+  scene.fillStyle=g;
+  scene.fillRect(0,0,w,h);
+
+  scene.textAlign="center";
+  scene.textBaseline="middle";
+
+  texts.forEach(t=>{
+    scene.font=`${t.size}px Offside`;
+    scene.fillStyle=t.color;
+    scene.fillText(t.text,t.x,t.y);
+  });
+
+  source.clearRect(0,0,w,h);
+  source.drawImage(sceneCanvas,0,0);
+}
+
+glass.addEventListener("pointerdown",e=>{
+  dragging=true;
+  glass.setPointerCapture(e.pointerId);
+  const r=glass.getBoundingClientRect();
+  grabOffsetX=e.clientX-r.left;
+  grabOffsetY=e.clientY-r.top;
+  lastX=e.clientX;
+  lastY=e.clientY;
+});
+
+glass.addEventListener("pointermove",e=>{
+  if(!dragging)return;
+
+  lensX=e.clientX-grabOffsetX+glass.offsetWidth/2;
+  lensY=e.clientY-grabOffsetY+glass.offsetHeight/2;
+  glass.style.left=lensX+"px";
+  glass.style.top=lensY+"px";
+
+  velocityX=e.clientX-lastX;
+  velocityY=e.clientY-lastY;
+  lastX=e.clientX;
+  lastY=e.clientY;
+
+  drawLiquidLens();
+});
+
+glass.addEventListener("pointerup",()=>dragging=false);
+glass.addEventListener("pointercancel",()=>dragging=false);
+
+function drawLiquidLens(){
+  lens.clearRect(0,0,lensCanvas.width,lensCanvas.height);
+
+  const rx=CONFIG.glass.width/2,ry=CONFIG.glass.height/2,
+  speed=Math.hypot(velocityX,velocityY),
+  movement=Math.min(speed*2,30);
+
+  const left=Math.max(0,Math.floor(lensX-rx)),
+  right=Math.min(sceneCanvas.width,Math.ceil(lensX+rx)),
+  top=Math.max(0,Math.floor(lensY-ry)),
+  bottom=Math.min(sceneCanvas.height,Math.ceil(lensY+ry)),
+  w=right-left,h=bottom-top;
+
+  if(w<=0||h<=0)return;
+
+  const pixels=source.getImageData(left,top,w,h),
+  output=lens.createImageData(w,h);
+
+  for(let py=0;py<h;py++)for(let px=0;px<w;px++){
+    const sx=left+px,sy=top+py,
+    nx=(sx-lensX)/rx,ny=(sy-lensY)/ry,
+    distance=nx*nx+ny*ny;
+
+    if(distance>1)continue;
+
+    const strength=Math.pow(1-distance,2),
+    waveX=Math.sin(ny*Math.PI*3)*movement*strength,
+    waveY=Math.sin(nx*Math.PI*3)*movement*strength,
+    scale=1-strength*.20;
+
+    let sampleScreenX=lensX+(sx-lensX)*scale-waveX-velocityX*strength*.35,
+    sampleScreenY=lensY+(sy-lensY)*scale-waveY-velocityY*strength*.35,
+    sampleX=Math.round(sampleScreenX-left),
+    sampleY=Math.round(sampleScreenY-top);
+
+    sampleX=Math.max(0,Math.min(w-1,sampleX));
+    sampleY=Math.max(0,Math.min(h-1,sampleY));
+
+    const si=(sampleY*w+sampleX)*4,oi=(py*w+px)*4;
+    output.data[oi]=pixels.data[si];
+    output.data[oi+1]=pixels.data[si+1];
+    output.data[oi+2]=pixels.data[si+2];
+    output.data[oi+3]=255;
+  }
+
+  lens.putImageData(output,left,top);
+}
+
+function animate(){
+  if(!dragging){
+    velocityX*=.90;
+    velocityY*=.90;
+    if(Math.abs(velocityX)>.15||Math.abs(velocityY)>.15)drawLiquidLens();
+    else lens.clearRect(0,0,lensCanvas.width,lensCanvas.height);
+  }
+  requestAnimationFrame(animate);
+}
+
+addEventListener("resize",resize);
+document.fonts.ready.then(resize);
+resize();
+animate();
+</script>
+
+</body>
+</html>

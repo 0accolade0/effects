@@ -1,0 +1,1588 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Magnetic Title Bar</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+
+<style>
+*{box-sizing:border-box}
+
+html,body{
+ margin:0;padding:0;width:100%;min-height:100vh;
+ background:#A18EC8;
+ background-image:repeating-linear-gradient(0deg,rgba(0,0,0,.04) 0 1px,transparent 1px 3px);
+ color:#1A1A1A;user-select:none;overflow-x:hidden;
+ font-family:"Offside",sans-serif
+}
+
+header{
+ width:100%;max-width:1400px;margin:auto;padding:16px 24px 8px;
+ display:flex;flex-direction:column;align-items:center;text-align:center
+}
+
+h1{margin:0 0 5px;font-size:24px;font-weight:bold;letter-spacing:-.02em}
+
+header p{
+ margin:0 auto 12px;font-size:12px;max-width:620px;
+ font-weight:500;line-height:1.45
+}
+
+.tags{
+ display:flex;flex-wrap:wrap;align-items:center;
+ justify-content:center;gap:8px
+}
+
+.tags span{
+ padding:4px 10px;background:#F4E8DB;border:2px solid #000;
+ box-shadow:1.5px 1.5px #000;font-size:10px;font-weight:bold
+}
+
+main{
+ display:grid;
+ grid-template-columns:minmax(210px,300px) minmax(380px,1fr) minmax(210px,300px);
+ align-items:stretch;gap:clamp(12px,2vw,20px);
+ width:100%;max-width:1400px;margin:0 auto;
+ padding:12px clamp(12px,2vw,24px) 24px;
+ height:calc(100vh - 115px)
+}
+
+main>.left-panel{
+ grid-column:1;grid-row:1;width:100%;align-self:center
+}
+
+main>#viewport{
+ grid-column:2;grid-row:1;width:100%;height:100%;min-height:380px
+}
+
+main>.right-panel{
+ grid-column:3;grid-row:1;width:100%;align-self:center
+}
+
+.panel{
+ position:relative;
+ z-index:20;
+ background:#F4E8DB;
+ border:2px solid #000;
+ box-shadow:4px 4px #000;
+ border-radius:6px;
+ padding:16px;
+ display:flex;
+ flex-direction:column;
+ gap:10px;
+ pointer-events:auto
+}
+
+.label{
+ font-size:11px;font-weight:bold;letter-spacing:.1em;
+ text-transform:uppercase;color:#000;padding:2px 4px;
+ border-bottom:2px solid #000;margin-bottom:4px
+}
+
+.pill{
+ width:100%;min-height:42px;display:flex;
+ align-items:center;justify-content:space-between;
+ padding:6px 12px;background:#EEDFD0;border:2px solid #000;
+ box-shadow:2px 2px #000;color:#000;border-radius:6px;
+ transition:background .15s,transform .1s
+}
+
+.pill:hover{background:#FAF2E9}
+.pill:active{transform:translate(2px,2px);box-shadow:0 0 #000}
+.pill b{font-size:12px;font-weight:bold}
+
+.value{
+ background:#FAF2E9;border:1.5px solid #000;padding:2px 7px;
+ border-radius:4px;font-size:11px;font-weight:bold;color:#000
+}
+
+input[type=color]{
+ appearance:none;-webkit-appearance:none;
+ border:1.5px solid #000;border-radius:4px;
+ width:30px;height:26px;padding:0;background:none;cursor:pointer;
+ position:relative;z-index:30
+}
+
+input[type=color]::-webkit-color-swatch-wrapper{padding:0}
+input[type=color]::-webkit-color-swatch{border:0;border-radius:2px}
+
+textarea{
+ outline:0;background:#FAF2E9;border:1.5px solid #000;
+ padding:6px 8px;border-radius:4px;color:#000;
+ font-size:11px;font-weight:bold;width:100%;resize:vertical;
+ min-height:64px;line-height:1.45;
+ position:relative;z-index:30;
+ user-select:text
+}
+
+input[type=range]{
+ appearance:none;-webkit-appearance:none;
+ background:#D8C4B2;border:1.5px solid #000;border-radius:4px;
+ height:8px;width:95px;flex-shrink:1;min-width:60px;
+ cursor:pointer;
+ position:relative;z-index:30;
+ pointer-events:auto
+}
+
+input[type=range]::-webkit-slider-thumb{
+ appearance:none;-webkit-appearance:none;
+ height:16px;width:12px;border-radius:2px;
+ background:#FFD1DF;border:1.5px solid #000;
+ cursor:pointer;box-shadow:1px 1px #000
+}
+
+input[type=range]::-moz-range-thumb{
+ height:16px;width:12px;border-radius:2px;
+ background:#FFD1DF;border:1.5px solid #000;cursor:pointer
+}
+
+#viewport{
+ position:relative;overflow:hidden;background:#A18EC8;
+ border:2px solid #000;box-shadow:6px 6px #000;
+ border-radius:6px;cursor:grab;touch-action:none;
+ z-index:1
+}
+
+#viewport:active{cursor:grabbing}
+
+canvas{
+ display:block;width:100%!important;height:100%!important;
+ pointer-events:auto
+}
+
+#status{
+ display:inline-block;margin-top:5px;
+ background:#FAF2E9;border:1.5px solid #000;
+ padding:3px 7px;border-radius:4px;
+ font-size:10px;font-weight:bold
+}
+
+/* EMBED */
+
+html.embed-mode,body.embed-mode{
+ background:transparent!important;
+ background-image:none!important;
+ overflow:hidden!important;
+ width:100%!important;height:100%!important;
+ min-height:100%!important;margin:0!important;padding:0!important
+}
+
+body.embed-mode main{
+ display:block!important;
+ position:fixed!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important;
+ padding:0!important;
+ margin:0!important;
+ max-width:none!important
+}
+
+body.embed-mode header,
+body.embed-mode .panel{
+ display:none!important
+}
+
+body.embed-mode #viewport{
+ position:fixed!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important;
+ min-height:0!important;
+ border:0!important;
+ border-radius:0!important;
+ box-shadow:none!important;
+ background:var(--embed-bg,#A18EC8)!important
+}
+
+body.embed-mode canvas{
+ position:absolute!important;
+ inset:0!important;
+ width:100%!important;
+ height:100%!important
+}
+
+@media(max-width:1000px){
+ main{
+  grid-template-columns:1fr;
+  height:auto;
+  padding:12px
+ }
+
+ main>.left-panel{
+  grid-column:1;
+  grid-row:2
+ }
+
+ main>#viewport{
+  grid-column:1;
+  grid-row:1;
+  min-height:320px
+ }
+
+ main>.right-panel{
+  grid-column:1;
+  grid-row:3
+ }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+ <h1>Magnetic Title Bar</h1>
+ <p>Drag the buttons in 3D space to test magnetic pull forces and physical snapping dynamics.</p>
+
+ <div class="tags">
+  <span>CATEGORY: Fluid / Particles</span>
+  <span>Three.js</span>
+  <span>JavaScript</span>
+ </div>
+</header>
+
+<main>
+
+ <div class="panel left-panel">
+
+  <div class="label">Appearance &amp; Labels</div>
+
+  <div class="pill">
+   <b>Background</b>
+   <input type="color" id="bg" value="#A18EC8">
+  </div>
+
+  <div class="pill">
+   <b>Button Color</b>
+   <input type="color" id="bc" value="#F87670">
+  </div>
+
+  <div class="pill">
+   <b>Text Color</b>
+   <input type="color" id="tc" value="#000000">
+  </div>
+
+  <div class="pill">
+   <b>Font</b>
+   <span class="value">Offside</span>
+  </div>
+
+  <div>
+   <b style="font-size:12px">Button Texts</b>
+   <textarea id="texts">Home
+About
+Services
+Contact</textarea>
+  </div>
+
+  <button class="pill" id="reset" type="button">
+   <b>Reset Layout</b>
+   <span style="font-size:18px">↻</span>
+  </button>
+
+ </div>
+
+ <div id="viewport">
+  <canvas id="canvas"></canvas>
+ </div>
+
+ <div class="panel right-panel">
+
+  <div class="label">Physics Sliders</div>
+
+  <div class="pill">
+   <span style="font-size:12px;font-weight:bold">Button Count</span>
+
+   <span style="display:flex;align-items:center;gap:8px">
+    <span class="value" id="cv">4</span>
+    <input type="range" id="count" min="1" max="8" step="1" value="4">
+   </span>
+  </div>
+
+  <div class="pill">
+   <span style="font-size:12px;font-weight:bold">Magnet Force</span>
+
+   <span style="display:flex;align-items:center;gap:8px">
+    <span class="value" id="sv">1.0</span>
+    <input type="range" id="strength" min=".1" max="2" step=".1" value="1">
+   </span>
+  </div>
+
+  <div class="pill" style="display:block">
+   <small style="font-size:10px;font-weight:bold">GROUP STATE</small>
+   <div id="status">4 Independent Groups</div>
+  </div>
+
+ </div>
+
+</main>
+
+<script>
+(()=>{
+"use strict";
+
+/* ---------------- CONFIG ---------------- */
+
+const Q=new URLSearchParams(location.search);
+const $=id=>document.getElementById(id);
+
+let embed=
+ Q.get("embed")==="1"||
+ Q.get("embed")==="true";
+
+let cfg={
+ background:"#A18EC8",
+ backgroundOpacity:1,
+ buttonColor:"#F87670",
+ buttonOpacity:1,
+ textColor:"#000000",
+ font:"Offside",
+ buttonCount:4,
+ buttonTexts:"Home\nAbout\nServices\nContact",
+ magnetStrength:1
+};
+
+/* ---------------- THREE ---------------- */
+
+let scene,camera,renderer,ray,plane;
+let buttons=[];
+let drag=null;
+
+let ptr=new THREE.Vector2();
+let target=new THREE.Vector3();
+
+let bodyGeo,textGeo;
+let last=0;
+
+const BW=1.55;
+const BH=.68;
+const BD=.26;
+
+const SNAP=1.5;
+const DAMP=.88;
+const W=new THREE.Vector3(0,0,1);
+
+/* ---------------- HELPERS ---------------- */
+
+function rgba(hex,a){
+ hex=String(hex||"#A18EC8").replace("#","");
+ if(hex.length===3)hex=hex.split("").map(x=>x+x).join("");
+
+ return `rgba(
+  ${parseInt(hex.slice(0,2),16)},
+  ${parseInt(hex.slice(2,4),16)},
+  ${parseInt(hex.slice(4,6),16)},
+  ${a}
+ )`;
+}
+
+function darker(hex,f=.48){
+ const c=new THREE.Color(hex);
+ c.multiplyScalar(f);
+ return c;
+}
+
+function labels(){
+ const a=String(cfg.buttonTexts||"").split(/\r?\n/);
+
+ return Array.from(
+  {length:cfg.buttonCount},
+  (_,i)=>
+   (a[i]||`Button ${i+1}`).trim()||
+   `Button ${i+1}`
+ );
+}
+
+/* ---------------- BACKGROUND ---------------- */
+
+function updateBackground(){
+ const color=rgba(
+  cfg.background,
+  cfg.backgroundOpacity
+ );
+
+ document.body.style.backgroundColor=color;
+
+ document.documentElement.style.setProperty(
+  "--embed-bg",
+  color
+ );
+
+ if(embed){
+  const vp=$("viewport");
+  if(vp)vp.style.background=color;
+ }
+}
+
+/* ---------------- TEXT ---------------- */
+
+function textTexture(text){
+
+ const c=document.createElement("canvas");
+ const x=c.getContext("2d");
+
+ c.width=1400;
+ c.height=300;
+
+ x.clearRect(0,0,c.width,c.height);
+
+ let size=94;
+
+ x.font=`900 ${size}px "Offside",Arial,sans-serif`;
+ x.textAlign="center";
+ x.textBaseline="middle";
+
+ while(
+  x.measureText(text).width>1120 &&
+  size>54
+ ){
+  size-=2;
+  x.font=`900 ${size}px "Offside",Arial,sans-serif`;
+ }
+
+ const measured=x.measureText(text).width;
+
+ const sx=Math.min(
+  1.32,
+  1120/Math.max(measured,1)
+ );
+
+ x.save();
+
+ x.translate(700,150);
+ x.scale(sx,1);
+
+ x.font=`900 ${size}px "Offside",Arial,sans-serif`;
+ x.fillStyle=cfg.textColor;
+ x.textAlign="center";
+ x.textBaseline="middle";
+
+ x.fillText(text,0,0);
+
+ x.restore();
+
+ const t=new THREE.CanvasTexture(c);
+
+ t.needsUpdate=true;
+ t.minFilter=THREE.LinearFilter;
+ t.magFilter=THREE.LinearFilter;
+
+ return t;
+}
+
+/* ---------------- BUTTON ---------------- */
+
+function make(label,i){
+
+ const frontMat=new THREE.MeshStandardMaterial({
+  color:new THREE.Color(cfg.buttonColor),
+  roughness:.32,
+  metalness:.02,
+  transparent:cfg.buttonOpacity<1,
+  opacity:cfg.buttonOpacity
+ });
+
+ const sideMat=new THREE.MeshStandardMaterial({
+  color:darker(cfg.buttonColor,.48),
+  roughness:.45,
+  metalness:.02,
+  transparent:cfg.buttonOpacity<1,
+  opacity:cfg.buttonOpacity
+ });
+
+ const body=new THREE.Mesh(
+  bodyGeo,
+  [
+   sideMat,
+   sideMat,
+   sideMat,
+   sideMat,
+   frontMat,
+   sideMat
+  ]
+ );
+
+ const tex=textTexture(label);
+
+ const tm=new THREE.MeshBasicMaterial({
+  map:tex,
+  transparent:true,
+  depthWrite:false,
+  opacity:cfg.buttonOpacity
+ });
+
+ const textMesh=new THREE.Mesh(
+  textGeo,
+  tm
+ );
+
+ textMesh.position.z=BD/2+.006;
+ textMesh.renderOrder=5;
+
+ body.add(textMesh);
+ scene.add(body);
+
+ const x=
+  (i-(cfg.buttonCount-1)/2)*
+  (BW+.2);
+
+ return{
+  id:i,
+  label,
+  x,
+  y:0,
+  vx:0,
+  vy:0,
+  group:i,
+  drag:false,
+  mesh:body,
+  textMesh,
+  initX:x,
+  initY:0,
+  offx:0,
+  offy:0
+ };
+}
+
+/* ---------------- REBUILD ---------------- */
+
+function rebuild(){
+
+ if(!scene)return;
+
+ buttons.forEach(b=>{
+  scene.remove(b.mesh);
+
+  b.mesh.traverse(o=>{
+   if(o.material){
+    if(o.material.map)o.material.map.dispose();
+    o.material.dispose();
+   }
+  });
+ });
+
+ buttons=labels().map(make);
+
+ status();
+}
+
+/* ---------------- DIRECT VISUAL UPDATES ---------------- */
+
+function updateButtonColors(){
+
+ buttons.forEach(b=>{
+
+  const mats=b.mesh.material;
+
+  if(Array.isArray(mats)){
+
+   mats.forEach((m,i)=>{
+    if(i===4){
+     m.color.set(cfg.buttonColor);
+    }else{
+     m.color.copy(
+      darker(cfg.buttonColor,.48)
+     );
+    }
+
+    m.opacity=cfg.buttonOpacity;
+    m.transparent=cfg.buttonOpacity<1;
+    m.needsUpdate=true;
+   });
+  }
+
+  if(b.textMesh.material){
+   b.textMesh.material.opacity=cfg.buttonOpacity;
+   b.textMesh.material.needsUpdate=true;
+  }
+ });
+}
+
+function updateTextColors(){
+
+ /* Text is canvas-rendered, so regenerate only the text textures. */
+
+ buttons.forEach(b=>{
+
+  const old=b.textMesh.material.map;
+
+  const next=textTexture(b.label);
+
+  b.textMesh.material.map=next;
+  b.textMesh.material.needsUpdate=true;
+
+  if(old)old.dispose();
+ });
+}
+
+/* ---------------- THREE INIT ---------------- */
+
+function init(){
+
+ const el=$("viewport");
+ const c=$("canvas");
+
+ if(!el||!c||typeof THREE==="undefined")return;
+
+ scene=new THREE.Scene();
+
+ camera=new THREE.PerspectiveCamera(
+  40,
+  Math.max(el.clientWidth,1)/
+  Math.max(el.clientHeight,1),
+  .1,
+  100
+ );
+
+ camera.position.set(0,0,7);
+ camera.lookAt(0,0,0);
+
+ renderer=new THREE.WebGLRenderer({
+  canvas:c,
+  antialias:true,
+  alpha:true
+ });
+
+ renderer.setPixelRatio(
+  Math.min(window.devicePixelRatio||1,2)
+ );
+
+ if("outputEncoding" in renderer)
+  renderer.outputEncoding=THREE.sRGBEncoding;
+
+ renderer.shadowMap.enabled=true;
+
+ bodyGeo=new THREE.BoxGeometry(
+  BW,
+  BH,
+  BD
+ );
+
+ textGeo=new THREE.PlaneGeometry(
+  BW-.12,
+  BH-.10
+ );
+
+ ray=new THREE.Raycaster();
+
+ plane=new THREE.Plane(
+  W,
+  0
+ );
+
+ scene.add(
+  new THREE.AmbientLight(
+   0xffffff,
+   .72
+  )
+ );
+
+ const light=new THREE.DirectionalLight(
+  0xffffff,
+  .72
+ );
+
+ light.position.set(-2,4,7);
+ light.castShadow=true;
+
+ scene.add(light);
+
+ const fill=new THREE.DirectionalLight(
+  0xFFD1DF,
+  .12
+ );
+
+ fill.position.set(4,-3,5);
+
+ scene.add(fill);
+
+ rebuild();
+ resize();
+
+ el.addEventListener(
+  "pointerdown",
+  down,
+  {passive:false}
+ );
+
+ window.addEventListener(
+  "pointermove",
+  move,
+  {passive:false}
+ );
+
+ window.addEventListener(
+  "pointerup",
+  up
+ );
+
+ window.addEventListener(
+  "pointercancel",
+  up
+ );
+
+ window.addEventListener(
+  "resize",
+  resize
+ );
+
+ if(window.ResizeObserver){
+  new ResizeObserver(resize).observe(el);
+ }
+
+ requestAnimationFrame(anim);
+}
+
+/* ---------------- RESIZE ---------------- */
+
+function resize(){
+
+ if(!renderer||!camera)return;
+
+ const e=$("viewport");
+
+ if(!e)return;
+
+ const w=e.clientWidth||window.innerWidth;
+ const h=e.clientHeight||window.innerHeight;
+
+ if(!w||!h)return;
+
+ camera.aspect=w/h;
+ camera.updateProjectionMatrix();
+
+ renderer.setSize(
+  w,
+  h,
+  false
+ );
+}
+
+/* ---------------- POINTER ---------------- */
+
+function pointer(e){
+
+ const vp=$("viewport");
+
+ if(!vp)return false;
+
+ const r=vp.getBoundingClientRect();
+
+ if(!r.width||!r.height)return false;
+
+ ptr.set(
+  ((e.clientX-r.left)/r.width)*2-1,
+  -(((e.clientY-r.top)/r.height)*2-1)
+ );
+
+ ray.setFromCamera(
+  ptr,
+  camera
+ );
+
+ return true;
+}
+
+function down(e){
+
+ if(!renderer||!buttons.length)return;
+
+ if(!pointer(e))return;
+
+ const hit=ray.intersectObjects(
+  buttons.map(b=>b.mesh),
+  true
+ )[0];
+
+ if(!hit)return;
+
+ let obj=hit.object;
+
+ while(
+  obj.parent &&
+  !buttons.some(b=>b.mesh===obj)
+ ){
+  obj=obj.parent;
+ }
+
+ drag=buttons.find(
+  b=>b.mesh===obj
+ );
+
+ if(!drag)return;
+
+ drag.drag=true;
+
+ const p=new THREE.Vector3();
+
+ if(ray.ray.intersectPlane(plane,p)){
+
+  drag.offx=drag.x-p.x;
+  drag.offy=drag.y-p.y;
+
+  target.set(
+   drag.x,
+   drag.y,
+   0
+  );
+ }
+
+ try{
+  $("viewport").setPointerCapture(
+   e.pointerId
+  );
+ }catch(_){}
+
+ e.preventDefault();
+}
+
+function move(e){
+
+ if(!drag)return;
+
+ if(!pointer(e))return;
+
+ const p=new THREE.Vector3();
+
+ if(
+  ray.ray.intersectPlane(
+   plane,
+   p
+  )
+ ){
+
+  target.set(
+   p.x+drag.offx,
+   p.y+drag.offy,
+   0
+  );
+
+  drag.x=target.x;
+  drag.y=target.y;
+
+  drag.vx=0;
+  drag.vy=0;
+ }
+
+ e.preventDefault();
+}
+
+function up(){
+
+ if(drag){
+
+  drag.drag=false;
+  drag=null;
+ }
+}
+
+/* ---------------- STATUS ---------------- */
+
+function status(){
+
+ const el=$("status");
+
+ if(!el)return;
+
+ const n=new Set(
+  buttons.map(b=>b.group)
+ ).size;
+
+ el.textContent=
+  `${n} ${
+   n===1
+    ?"Unified Group"
+    :n===buttons.length
+     ?"Independent Groups"
+     :"Groups"
+  }`;
+}
+
+/* ---------------- PHYSICS ---------------- */
+
+function physics(dt){
+
+ const k=cfg.magnetStrength*18;
+
+ /* SNAP GROUPS */
+
+ for(let i=0;i<buttons.length;i++){
+
+  for(let j=i+1;j<buttons.length;j++){
+
+   const a=buttons[i];
+   const b=buttons[j];
+
+   if(a.drag||b.drag)continue;
+
+   const dx=b.x-a.x;
+   const dy=b.y-a.y;
+
+   const d=Math.hypot(dx,dy);
+
+   if(
+    a.group!==b.group &&
+    d<SNAP
+   ){
+
+    const old=b.group;
+    const g=a.group;
+
+    buttons.forEach(q=>{
+     if(q.group===old)
+      q.group=g;
+    });
+
+    b.vx*=.25;
+    b.vy*=.25;
+   }
+  }
+ }
+
+ /* FORCES */
+
+ buttons.forEach(b=>{
+
+  if(b.drag){
+
+   b.vx=0;
+   b.vy=0;
+
+   return;
+  }
+
+  let fx=0;
+  let fy=0;
+
+  buttons.forEach(o=>{
+
+   if(o===b)return;
+
+   const dx=o.x-b.x;
+   const dy=o.y-b.y;
+
+   const d2=dx*dx+dy*dy;
+   const d=Math.sqrt(d2)+.001;
+
+   if(b.group===o.group){
+
+    fx+=(
+     o.x-b.x-
+     (o.id-b.id)*(BW+.08)
+    )*18;
+
+    fy+=(o.y-b.y)*18;
+
+   }else if(d<4.5){
+
+    const f=k/(d2+.45);
+
+    fx+=(dx/d)*f;
+    fy+=(dy/d)*f;
+   }
+  });
+
+  /* BOUNDS */
+
+  if(Math.abs(b.x)>3.2){
+
+   fx-=
+    Math.sign(b.x)*
+    (Math.abs(b.x)-3.2)*
+    40;
+  }
+
+  if(Math.abs(b.y)>1.8){
+
+   fy-=
+    Math.sign(b.y)*
+    (Math.abs(b.y)-1.8)*
+    40;
+  }
+
+  b.vx=
+   (b.vx+fx*dt)*DAMP;
+
+  b.vy=
+   (b.vy+fy*dt)*DAMP;
+ });
+
+ /* COLLISIONS */
+
+ for(let n=0;n<3;n++){
+
+  for(let i=0;i<buttons.length;i++){
+
+   for(let j=i+1;j<buttons.length;j++){
+
+    const a=buttons[i];
+    const b=buttons[j];
+
+    if(a.group===b.group)continue;
+
+    const dx=b.x-a.x;
+    const dy=b.y-a.y;
+
+    const ox=
+     BW+.05-Math.abs(dx);
+
+    const oy=
+     BH+.05-Math.abs(dy);
+
+    if(ox>0&&oy>0){
+
+     if(ox<oy){
+
+      const s=Math.sign(dx)||1;
+
+      a.x-=s*ox/2;
+      b.x+=s*ox/2;
+
+      a.vx*=.5;
+      b.vx*=.5;
+
+     }else{
+
+      const s=Math.sign(dy)||1;
+
+      a.y-=s*oy/2;
+      b.y+=s*oy/2;
+
+      a.vy*=.5;
+      b.vy*=.5;
+     }
+    }
+   }
+  }
+ }
+
+ /* POSITION */
+
+ buttons.forEach(b=>{
+
+  if(!b.drag){
+
+   b.x+=b.vx*dt;
+   b.y+=b.vy*dt;
+  }
+
+  b.mesh.position.set(
+   b.x,
+   b.y,
+   b.drag?.25:0
+  );
+
+  b.mesh.rotation.z=
+   -b.vx*.08;
+
+  b.mesh.rotation.x=
+   b.vy*.08;
+ });
+
+ status();
+}
+
+/* ---------------- ANIMATION ---------------- */
+
+function anim(t){
+
+ requestAnimationFrame(anim);
+
+ const dt=Math.min(
+  (t-last)/1000||.016,
+  .033
+ );
+
+ last=t;
+
+ physics(dt);
+
+ renderer.render(
+  scene,
+  camera
+ );
+}
+
+/* ---------------- RESET ---------------- */
+
+function reset(){
+
+ buttons.forEach(b=>{
+
+  b.x=b.initX;
+  b.y=b.initY;
+
+  b.vx=0;
+  b.vy=0;
+
+  b.group=b.id;
+  b.drag=false;
+ });
+
+ status();
+}
+
+/* =====================================================
+   LIVE PREVIEW CONTROLS
+   These DO NOT go through config().
+   ===================================================== */
+
+function bindControls(){
+
+ const bg=$("bg");
+ const bc=$("bc");
+ const tc=$("tc");
+ const texts=$("texts");
+ const count=$("count");
+ const strength=$("strength");
+ const cv=$("cv");
+ const sv=$("sv");
+ const resetBtn=$("reset");
+
+ /* BACKGROUND */
+
+ if(bg){
+
+  bg.addEventListener("input",e=>{
+
+   cfg.background=e.target.value;
+
+   updateBackground();
+  });
+ }
+
+ /* BUTTON COLOR */
+
+ if(bc){
+
+  bc.addEventListener("input",e=>{
+
+   cfg.buttonColor=e.target.value;
+
+   updateButtonColors();
+  });
+ }
+
+ /* TEXT COLOR */
+
+ if(tc){
+
+  tc.addEventListener("input",e=>{
+
+   cfg.textColor=e.target.value;
+
+   updateTextColors();
+  });
+ }
+
+ /* TEXT */
+
+ if(texts){
+
+  texts.addEventListener("input",e=>{
+
+   cfg.buttonTexts=e.target.value;
+
+   if(buttons.length){
+    rebuild();
+   }
+  });
+ }
+
+ /* COUNT */
+
+ if(count){
+
+  const changeCount=()=>{
+
+   const value=Math.max(
+    1,
+    Math.min(
+     8,
+     parseInt(count.value,10)||4
+    )
+   );
+
+   cfg.buttonCount=value;
+
+   if(cv)
+    cv.textContent=value;
+
+   rebuild();
+  };
+
+  count.addEventListener(
+   "input",
+   changeCount
+  );
+
+  count.addEventListener(
+   "change",
+   changeCount
+  );
+ }
+
+ /* MAGNET FORCE */
+
+ if(strength){
+
+  const changeStrength=()=>{
+
+   const value=Math.max(
+    .1,
+    Math.min(
+     2,
+     Number(strength.value)||1
+    )
+   );
+
+   cfg.magnetStrength=value;
+
+   if(sv)
+    sv.textContent=value.toFixed(1);
+  };
+
+  strength.addEventListener(
+   "input",
+   changeStrength
+  );
+
+  strength.addEventListener(
+   "change",
+   changeStrength
+  );
+ }
+
+ /* RESET */
+
+ if(resetBtn){
+
+  resetBtn.addEventListener(
+   "click",
+   reset
+  );
+ }
+}
+
+/* ---------------- EMBED MODE ---------------- */
+
+function embedMode(v){
+
+ embed=!!v;
+
+ document.documentElement.classList.toggle(
+  "embed-mode",
+  embed
+ );
+
+ document.body.classList.toggle(
+  "embed-mode",
+  embed
+ );
+
+ updateBackground();
+
+ if(renderer)
+  setTimeout(
+   resize,
+   30
+  );
+}
+
+/* ---------------- CONFIG API ---------------- */
+
+const SCHEMA=[
+ {
+  key:"background",
+  label:"Background Color",
+  type:"color",
+  default:"#A18EC8"
+ },
+ {
+  key:"backgroundOpacity",
+  label:"Background Transparency",
+  type:"range",
+  min:0,
+  max:1,
+  step:.05,
+  default:1
+ },
+ {
+  key:"buttonColor",
+  label:"Button Color",
+  type:"color",
+  default:"#F87670"
+ },
+ {
+  key:"buttonOpacity",
+  label:"Button Transparency",
+  type:"range",
+  min:0,
+  max:1,
+  step:.05,
+  default:1
+ },
+ {
+  key:"textColor",
+  label:"Text Color",
+  type:"color",
+  default:"#000000"
+ },
+ {
+  key:"font",
+  label:"Font",
+  type:"select",
+  options:["Offside"],
+  default:"Offside"
+ },
+ {
+  key:"buttonCount",
+  label:"Number of Buttons",
+  type:"range",
+  min:1,
+  max:8,
+  step:1,
+  default:4
+ },
+ {
+  key:"buttonTexts",
+  label:"Button Labels (1 per line)",
+  type:"textarea",
+  default:"Home\nAbout\nServices\nContact"
+ },
+ {
+  key:"magnetStrength",
+  label:"Magnet Force",
+  type:"range",
+  min:.1,
+  max:2,
+  step:.1,
+  default:1
+ }
+];
+
+function applyExternalConfig(c={}){
+
+ if(c.embed!==undefined)
+  embedMode(!!c.embed);
+
+ if(c.background!==undefined)
+  cfg.background=c.background;
+
+ if(c.backgroundOpacity!==undefined)
+  cfg.backgroundOpacity=Math.max(
+   0,
+   Math.min(1,Number(c.backgroundOpacity))
+  );
+
+ if(c.buttonColor!==undefined)
+  cfg.buttonColor=c.buttonColor;
+
+ if(c.buttonOpacity!==undefined)
+  cfg.buttonOpacity=Math.max(
+   0,
+   Math.min(1,Number(c.buttonOpacity))
+  );
+
+ if(c.textColor!==undefined)
+  cfg.textColor=c.textColor;
+
+ if(c.buttonCount!==undefined)
+  cfg.buttonCount=Math.max(
+   1,
+   Math.min(8,parseInt(c.buttonCount)||4)
+  );
+
+ if(c.buttonTexts!==undefined)
+  cfg.buttonTexts=
+   Array.isArray(c.buttonTexts)
+    ?c.buttonTexts.join("\n")
+    :String(c.buttonTexts);
+
+ if(c.magnetStrength!==undefined)
+  cfg.magnetStrength=Math.max(
+   .1,
+   Math.min(2,Number(c.magnetStrength)||1)
+  );
+
+ if($("bg"))$("bg").value=cfg.background;
+ if($("bc"))$("bc").value=cfg.buttonColor;
+ if($("tc"))$("tc").value=cfg.textColor;
+ if($("texts"))$("texts").value=cfg.buttonTexts;
+
+ if($("count")){
+  $("count").value=cfg.buttonCount;
+  $("cv").textContent=cfg.buttonCount;
+ }
+
+ if($("strength")){
+  $("strength").value=cfg.magnetStrength;
+  $("sv").textContent=
+   cfg.magnetStrength.toFixed(1);
+ }
+
+ updateBackground();
+
+ if(renderer){
+  rebuild();
+ }
+}
+
+/* ---------------- URL CONFIG ---------------- */
+
+function queryConfig(){
+
+ const c={};
+
+ [
+  "background",
+  "backgroundOpacity",
+  "buttonColor",
+  "buttonOpacity",
+  "textColor",
+  "font",
+  "buttonCount",
+  "buttonTexts",
+  "magnetStrength"
+ ].forEach(k=>{
+  if(Q.has(k))
+   c[k]=Q.get(k);
+ });
+
+ const e=
+  Q.get("config")||
+  Q.get("state");
+
+ if(e){
+
+  try{
+
+   Object.assign(
+    c,
+    JSON.parse(
+     decodeURIComponent(e)
+    )
+   );
+
+  }catch(_){}
+ }
+
+ if(Object.keys(c).length)
+  applyExternalConfig(c);
+}
+
+/* ---------------- MESSAGE API ---------------- */
+
+addEventListener(
+ "message",
+ e=>{
+
+  const d=e.data;
+
+  if(!d||typeof d!=="object")
+   return;
+
+  if(d.type==="effect:get-config"){
+
+   e.source?.postMessage(
+    {
+     type:"effect:config-schema",
+     requestId:d.requestId,
+     fields:SCHEMA
+    },
+    "*"
+   );
+
+   return;
+  }
+
+  if(d.type==="effect:get-state"){
+
+   e.source?.postMessage(
+    {
+     type:"effect:state",
+     requestId:d.requestId,
+     state:cfg
+    },
+    "*"
+   );
+
+   return;
+  }
+
+  if([
+   "magnetic-config",
+   "effect:configure",
+   "effect:set-state"
+  ].includes(d.type)){
+
+   applyExternalConfig(
+    d.config||
+    d.settings||
+    d.state||
+    d
+   );
+  }
+ }
+);
+
+/* ---------------- BOOT ---------------- */
+
+function boot(){
+
+ /* IMPORTANT:
+    iframe != embed.
+    Only explicit embed query activates embed mode.
+ */
+
+ if(embed)
+  embedMode(true);
+
+ bindControls();
+
+ init();
+
+ queryConfig();
+
+ if(Q.get("embed")!==null){
+
+  embedMode(
+   Q.get("embed")==="1"||
+   Q.get("embed")==="true"
+  );
+ }
+
+ if(window.parent!==window){
+
+  window.parent.postMessage(
+   {
+    type:"effect:ready"
+   },
+   "*"
+  );
+ }
+}
+
+if(document.readyState==="loading"){
+
+ document.addEventListener(
+  "DOMContentLoaded",
+  boot,
+  {once:true}
+ );
+
+}else{
+
+ boot();
+}
+
+})();
+</script>
+
+</body>
+</html>

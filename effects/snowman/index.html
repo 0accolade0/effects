@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Realistic Digital Snow</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:#111c24;color:#fff;font-family:"Offside",monospace;user-select:none}
+#app{position:fixed;inset:0;overflow:hidden;background:linear-gradient(#1e3240 0%,#152631 55%,#0d171d 100%)}
+#app:before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 8%,rgba(255,255,255,.08),transparent 45%),radial-gradient(circle at 20% 35%,rgba(170,210,230,.04),transparent 30%)}
+#canvas{position:absolute;inset:0;width:100%;height:100%;display:block;filter:drop-shadow(0 8px 16px rgba(0,0,0,0.3))}
+
+/* Toolbar UI */
+#toolbar{position:absolute;top:16px;left:50%;transform:translateX(-50%);display:flex;flex-direction:column;gap:6px;align-items:center;z-index:10}
+.bar-group{display:flex;gap:6px;background:rgba(15,26,34,0.75);padding:5px 8px;border-radius:12px;backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,0.12)}
+.bar-label{font-size:9px;color:rgba(255,255,255,0.4);letter-spacing:0.1em;margin-right:4px;display:flex;align-items:center}
+.btn{background:transparent;border:none;color:rgba(255,255,255,0.7);padding:5px 12px;border-radius:8px;font-family:inherit;font-size:11px;letter-spacing:.05em;cursor:pointer;transition:all .15s ease;display:flex;align-items:center;gap:4px}
+.btn:hover{color:#fff;background:rgba(255,255,255,0.1)}
+.btn.active{color:#111c24;background:#e8f1f8;font-weight:bold;box-shadow:0 2px 8px rgba(0,0,0,0.3)}
+
+#hint{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);font-size:11px;letter-spacing:.08em;opacity:.55;white-space:nowrap;pointer-events:none;text-shadow:0 2px 4px rgba(0,0,0,0.5);text-align:center}
+</style>
+</head>
+<body>
+<main id="app">
+  <div id="toolbar">
+    <div class="bar-group">
+      <span class="bar-label">SHAPES</span>
+      <button class="btn active" data-shape="organic">ORGANIC</button>
+      <button class="btn" data-shape="brick">BRICK</button>
+      <button class="btn" data-shape="wedge">WEDGE</button>
+      <button class="btn" data-shape="sphere">SPHERE</button>
+      <button class="btn" data-shape="pillar">PILLAR</button>
+    </div>
+    <div class="bar-group">
+      <span class="bar-label">PROPS</span>
+      <button class="btn acc-btn" data-acc="carrot">🥕 CARROT</button>
+      <button class="btn acc-btn" data-acc="eyes">👀 EYES</button>
+      <button class="btn acc-btn" data-acc="hat">🎩 TOP HAT</button>
+      <button class="btn acc-btn" data-acc="stick">🥢 STICK</button>
+      <button class="btn acc-btn" data-acc="button">⚫ COAL</button>
+    </div>
+  </div>
+  <canvas id="canvas"></canvas>
+  <div id="hint">SCROLL / 'R' KEY: ROTATE HELD ITEM &nbsp;·&nbsp; LEFT: SCOOP/PLACE &nbsp;·&nbsp; RIGHT: DISPERSE</div>
+</main>
+
+<script>
+const c = document.getElementById("canvas"), ctx = c.getContext("2d", {alpha: true, desynchronized: true});
+let W = innerWidth, H = innerHeight, DPR = 1, flakes = [], chunks = [], accessories = [], ground = [], grab = null, mode = null, moved = 0;
+let currentShape = "organic";
+const MAX_SNOW = .40;
+
+// UI Setup
+document.querySelectorAll("#toolbar .btn[data-shape]").forEach(btn => {
+    btn.addEventListener("click", () => {
+        document.querySelectorAll("#toolbar .btn[data-shape]").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentShape = btn.dataset.shape;
+    });
+});
+
+document.querySelectorAll(".acc-btn").forEach(btn => {
+    btn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        spawnAccessory(btn.dataset.acc);
+    });
+});
+
+function resize() {
+    W = innerWidth; H = innerHeight; DPR = Math.min(devicePixelRatio || 1, 2);
+    c.width = W * DPR; c.height = H * DPR; c.style.width = W + "px"; c.style.height = H + "px";
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+    const n = Math.ceil(W / 8) + 2, old = ground; ground = Array(n).fill(0);
+    for (let i = 0; i < n; i++) {
+        const x = i / (n - 1), wave = Math.pow(Math.sin(x * Math.PI), .55);
+        ground[i] = H * (.20 + .05 * wave) + H * .015 * Math.sin(x * 7) * Math.sin(x * 3);
+    }
+    if (old.length) {
+        const s = (old.length - 1) / (n - 1);
+        for (let i = 0; i < n; i++) ground[i] = Math.min(H * MAX_SNOW, Math.max(ground[i], old[Math.min(old.length - 1, Math.round(i * s))] || 0));
+    }
+    makeFlakes();
+}
+
+function makeFlakes() {
+    flakes = [];
+    for (let i = 0; i < 450; i++) flakes.push({
+        x: Math.random() * W, y: Math.random() * H,
+        vx: (Math.random() - .5) * .4, vy: .5 + Math.random() * 1.5,
+        r: .5 + Math.random() * 2.2, p: Math.random() * 6.28
+    });
+}
+
+function gy(x) {
+    const i = Math.max(0, Math.min(ground.length - 1, Math.floor(x / 8)));
+    return H - 10 - ground[i];
+}
+
+function addSnow(x, amount, r = 45) {
+    for (let px = x - r; px <= x + r; px += 8) {
+        const i = Math.floor(px / 8);
+        if (i < 0 || i >= ground.length) continue;
+        const d = Math.abs(px - x) / r;
+        const room = Math.max(0, H * MAX_SNOW - ground[i]);
+        ground[i] += Math.min(room, amount * (1 - d * d));
+    }
+}
+
+function takeSnow(x, amount, r = 42) {
+    let got = 0;
+    for (let px = x - r; px <= x + r; px += 8) {
+        const i = Math.floor(px / 8);
+        if (i < 0 || i >= ground.length) continue;
+        const d = Math.abs(px - x) / r;
+        const a = Math.min(ground[i], amount * (1 - d * d));
+        ground[i] -= a; got += a;
+    }
+    return got;
+}
+
+function radius(m) { return Math.max(3, Math.min(100, Math.pow(m, 0.48) * 3)); }
+
+// Generate Point Arrays for Shapes
+function makePts(type) {
+    let pts = [];
+    if (type === "brick") {
+        return [{x: -1, y: -0.55}, {x: 1, y: -0.55}, {x: 1, y: 0.55}, {x: -1, y: 0.55}];
+    } else if (type === "wedge") {
+        return [{x: -0.9, y: 0.6}, {x: 0.9, y: 0.6}, {x: -0.4, y: -0.6}];
+    } else if (type === "sphere") {
+        for (let i = 0; i < 16; i++) {
+            let a = (i / 16) * Math.PI * 2;
+            let d = 0.95 + Math.random() * 0.05;
+            pts.push({x: Math.cos(a) * d, y: Math.sin(a) * d});
+        }
+        return pts;
+    } else if (type === "pillar") {
+        return [{x: -0.45, y: -1.1}, {x: 0.45, y: -1.1}, {x: 0.5, y: 1.1}, {x: -0.5, y: 1.1}];
+    }
+
+    // Default Organic Smooth Clod
+    const sides = 14;
+    let offsets = [];
+    for (let i = 0; i < sides; i++) offsets[i] = 0.82 + Math.random() * 0.18;
+    for (let k = 0; k < 2; k++) {
+        let smoothed = [];
+        for (let i = 0; i < sides; i++) {
+            let prev = offsets[(i - 1 + sides) % sides];
+            let curr = offsets[i];
+            let next = offsets[(i + 1) % sides];
+            smoothed[i] = (prev + curr * 2 + next) / 4;
+        }
+        offsets = smoothed;
+    }
+    for (let i = 0; i < sides; i++) {
+        let a = (i / sides) * Math.PI * 2;
+        pts.push({x: Math.cos(a) * offsets[i], y: Math.sin(a) * offsets[i]});
+    }
+    return pts;
+}
+
+function hitChunk(x, y) {
+    for (let i = chunks.length - 1; i >= 0; i--) {
+        const c = chunks[i], dx = x - c.x, dy = y - c.y;
+        if (dx * dx + dy * dy < (c.r + 6) * (c.r + 6)) return i;
+    }
+    return -1;
+}
+
+function hitAccessory(x, y) {
+    for (let i = accessories.length - 1; i >= 0; i--) {
+        const a = accessories[i], dx = x - a.x, dy = y - a.y;
+        if (dx * dx + dy * dy < (a.r + 10) * (a.r + 10)) return i;
+    }
+    return -1;
+}
+
+function spawnAccessory(type) {
+    grab = {
+        isAccessory: true,
+        type: type,
+        x: mouse.x || W / 2,
+        y: mouse.y || H / 2,
+        angle: 0,
+        r: type === "hat" ? 22 : type === "stick" ? 28 : 14
+    };
+    mode = "move";
+}
+
+const mouse = {x: W/2, y: H/2, px: W/2, py: H/2, down: false};
+
+function gather() {
+    if (!grab || !grab.build || grab.isAccessory) return;
+    const dx = mouse.x - mouse.px, dy = mouse.y - mouse.py, speed = Math.hypot(dx, dy);
+    grab.x = mouse.x; grab.y = mouse.y;
+    const surface = gy(mouse.x), depth = grab.r * .8 + 20;
+
+    if (mouse.y + depth > surface - 20) {
+        const gain = takeSnow(mouse.x, Math.min(1.8, 0.3 + speed * .04), Math.max(25, grab.r * .8));
+        if (gain > 0) grab.mass += gain * 0.5;
+    }
+    
+    if (speed > .5) grab.mass += Math.min(0.2, speed * .008);
+    grab.r = radius(grab.mass);
+}
+
+function returnToPile() {
+    if (!grab) return;
+    if (!grab.isAccessory) {
+        const spreadR = Math.max(65, grab.r * 3.5);
+        const amount = (grab.mass * 0.6) / (spreadR / 15);
+        addSnow(grab.x, amount, spreadR);
+    }
+    grab = null;
+}
+
+function updatePhysics(t) {
+    for(let i=1; i<ground.length-1; i++) {
+        let diffR = ground[i] - ground[i+1], diffL = ground[i] - ground[i-1];
+        const maxSlope = 2.5;
+        if(diffR > maxSlope) { let slip = (diffR - maxSlope)*0.5; ground[i] -= slip; ground[i+1] += slip; }
+        if(diffL > maxSlope) { let slip = (diffL - maxSlope)*0.5; ground[i] -= slip; ground[i-1] += slip; }
+        
+        const avg = (ground[i-1] + ground[i] + ground[i+1]) / 3;
+        ground[i] += (avg - ground[i]) * .035;
+        ground[i] = Math.min(ground[i], H * MAX_SNOW);
+    }
+
+    for (const p of flakes) {
+        p.p += .01; p.vx += Math.sin(t * .0002 + p.p) * .0015; p.vx *= .998;
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < -10) p.x = W + 10; if (p.x > W + 10) p.x = -10;
+        if (p.y >= gy(p.x)) {
+            addSnow(p.x, .35 * Math.max(.05, 1 - (ground[Math.floor(p.x/8)]||0) / (H * MAX_SNOW)), 15);
+            p.x = Math.random() * W; p.y = -Math.random() * 120; p.vy = .5 + Math.random() * 1.5;
+        }
+    }
+
+    for (let i = 0; i < chunks.length; i++) {
+        const c = chunks[i];
+        if (c.settled) continue;
+
+        c.vy += .15; c.x += c.vx; c.y += c.vy;
+
+        if (c.x < c.r) { c.x = c.r; c.vx = 0; }
+        if (c.x > W - c.r) { c.x = W - c.r; c.vx = 0; }
+
+        let hit = false;
+        const floor = gy(c.x);
+        if (c.y + c.r * 0.75 >= floor) { c.y = floor - c.r * 0.75; hit = true; }
+
+        if (!hit) {
+            for (let j = 0; j < chunks.length; j++) {
+                if (i === j) continue;
+                const o = chunks[j];
+                const dx = c.x - o.x, dy = c.y - o.y;
+                const dist = Math.hypot(dx, dy);
+                const minDist = (c.r + o.r) * 0.7;
+                
+                if (dist < minDist && c.y < o.y + o.r * 0.2) {
+                    hit = true;
+                    const push = minDist - dist;
+                    c.x += (dx / dist) * push; c.y += (dy / dist) * push;
+                    break;
+                }
+            }
+        }
+
+        if (hit) { c.vx = 0; c.vy = 0; c.settled = true; }
+    }
+}
+
+function drawAccessoryItem(a) {
+    ctx.save();
+    ctx.translate(a.x, a.y);
+    ctx.rotate(a.angle || 0);
+
+    if (a.type === "carrot") {
+        // Carrot nose
+        ctx.fillStyle = "#ff6b00";
+        ctx.beginPath();
+        ctx.moveTo(-6, -6); ctx.lineTo(28, 0); ctx.lineTo(-6, 6);
+        ctx.closePath(); ctx.fill();
+        ctx.strokeStyle = "#d45100"; ctx.lineWidth = 1.5;
+        ctx.beginPath(); ctx.moveTo(4, -3); ctx.lineTo(5, 3); ctx.moveTo(14, -2); ctx.lineTo(15, 2); ctx.stroke();
+    } else if (a.type === "eyes") {
+        // Googly Eyes
+        const drawEye = (ox) => {
+            ctx.fillStyle = "#ffffff";
+            ctx.beginPath(); ctx.arc(ox, 0, 8, 0, Math.PI * 2); ctx.fill();
+            ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 1; ctx.stroke();
+            
+            // Pupil moves toward mouse
+            let dx = mouse.x - (a.x + ox), dy = mouse.y - a.y;
+            let dist = Math.hypot(dx, dy) || 1;
+            let px = ox + (dx / dist) * 3, py = (dy / dist) * 3;
+            ctx.fillStyle = "#1e293b";
+            ctx.beginPath(); ctx.arc(px, py, 3.5, 0, Math.PI * 2); ctx.fill();
+        };
+        drawEye(-10); drawEye(10);
+    } else if (a.type === "hat") {
+        // Top Hat
+        ctx.fillStyle = "#1e1e24";
+        ctx.fillRect(-22, 6, 44, 5); // Brim
+        ctx.fillRect(-14, -22, 28, 28); // Crown
+        ctx.fillStyle = "#dc2626"; // Red band
+        ctx.fillRect(-14, 2, 28, 4);
+    } else if (a.type === "stick") {
+        // Wooden Stick Arm
+        ctx.strokeStyle = "#5c3d2e"; ctx.lineWidth = 4; ctx.lineCap = "round";
+        ctx.beginPath();
+        ctx.moveTo(-25, 0); ctx.lineTo(25, 0);
+        ctx.moveTo(8, 0); ctx.lineTo(18, -10);
+        ctx.moveTo(12, 0); ctx.lineTo(20, 8);
+        ctx.stroke();
+    } else if (a.type === "button") {
+        // Coal Button
+        ctx.fillStyle = "#262626";
+        ctx.beginPath(); ctx.arc(0, 0, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = "#404040";
+        ctx.beginPath(); ctx.arc(-2, -2, 3, 0, Math.PI * 2); ctx.fill();
+    }
+
+    ctx.restore();
+}
+
+function drawRender() {
+    ctx.clearRect(0, 0, W, H);
+    
+    // Draw Ground
+    ctx.globalAlpha = 1; ctx.fillStyle = "#e8f1f8";
+    ctx.beginPath(); ctx.moveTo(0, H);
+    for (let i = 0; i < ground.length; i++) ctx.lineTo(i * 8, gy(i * 8));
+    ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
+    ctx.lineWidth = 4; ctx.strokeStyle = "#c8dceb"; ctx.stroke();
+
+    // Draw Flakes
+    ctx.fillStyle = "#fff";
+    for (const p of flakes) {
+        ctx.globalAlpha = .35 + Math.sin(p.p) * .15;
+        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 6.283); ctx.fill();
+    }
+
+    // Draw Chunks
+    ctx.globalAlpha = 1;
+    const drawChunk = (c, isGrab = false) => {
+        ctx.save();
+        ctx.translate(c.x, c.y);
+        ctx.rotate(c.angle || 0);
+        
+        ctx.fillStyle = isGrab ? "rgba(255, 255, 255, 0.95)" : "#ffffff";
+        ctx.beginPath();
+        ctx.moveTo(c.pts[0].x * c.r, c.pts[0].y * c.r);
+        for(let i = 1; i < c.pts.length; i++) ctx.lineTo(c.pts[i].x * c.r, c.pts[i].y * c.r);
+        ctx.closePath(); ctx.fill();
+
+        ctx.fillStyle = "#e1ecf5";
+        ctx.beginPath();
+        ctx.moveTo(c.pts[0].x * c.r * 0.85, c.pts[0].y * c.r * 0.85);
+        for(let i = 1; i < c.pts.length; i += 2) {
+            ctx.lineTo(c.pts[i].x * c.r * 0.75, c.pts[i].y * c.r * 0.75);
+        }
+        ctx.closePath(); ctx.fill();
+
+        ctx.restore();
+    };
+
+    for (const c of chunks) drawChunk(c);
+    
+    // Draw Accessories in front of snow
+    for (const a of accessories) drawAccessoryItem(a);
+
+    // Draw currently held item on top
+    if (grab) {
+        if (grab.isAccessory) drawAccessoryItem(grab);
+        else drawChunk(grab, true);
+    }
+}
+
+function loop(t) {
+    updatePhysics(t);
+    drawRender();
+    requestAnimationFrame(loop);
+}
+
+// Rotation handling (Mouse Wheel & Keyboard)
+window.addEventListener("wheel", e => {
+    if (grab) {
+        grab.angle = (grab.angle || 0) + (e.deltaY > 0 ? 0.2 : -0.2);
+    }
+}, {passive: true});
+
+window.addEventListener("keydown", e => {
+    if (!grab) return;
+    if (e.key === "r" || e.key === "R" || e.key === "ArrowRight" || e.key === "d") {
+        grab.angle = (grab.angle || 0) + 0.25;
+    } else if (e.key === "ArrowLeft" || e.key === "a") {
+        grab.angle = (grab.angle || 0) - 0.25;
+    }
+});
+
+// Controls
+c.addEventListener("pointerdown", e => {
+    if (e.target.closest("#toolbar")) return;
+    e.preventDefault();
+    mouse.x = mouse.px = e.clientX; mouse.y = mouse.py = e.clientY;
+    mouse.down = true; moved = 0;
+
+    if (e.button === 0) {
+        // Check accessories first
+        let ai = hitAccessory(mouse.x, mouse.y);
+        if (ai >= 0) {
+            grab = {...accessories.splice(ai, 1)[0], isAccessory: true};
+            mode = "move";
+        } else {
+            // Check chunk or scoop ground
+            let ci = hitChunk(mouse.x, mouse.y);
+            if (ci >= 0) {
+                grab = {...chunks.splice(ci, 1)[0], build: true, settled: false, isAccessory: false};
+                mode = "build";
+            } else if (mouse.y >= gy(mouse.x) - 45) {
+                mode = "build";
+                const m = takeSnow(mouse.x, 3, 20);
+                if (m > 0.3) grab = {x: mouse.x, y: mouse.y, mass: m, r: radius(m), pts: makePts(currentShape), angle: 0, build: true, isAccessory: false};
+            }
+        }
+    } else if (e.button === 2) {
+        mode = "move";
+        let ai = hitAccessory(mouse.x, mouse.y);
+        if (ai >= 0) {
+            accessories.splice(ai, 1); // Delete accessory on right click
+        } else {
+            let ci = hitChunk(mouse.x, mouse.y);
+            if (ci >= 0) grab = {...chunks.splice(ci, 1)[0], build: false, settled: false, isAccessory: false};
+        }
+    }
+    c.setPointerCapture?.(e.pointerId);
+});
+
+c.addEventListener("pointermove", e => {
+    moved += Math.hypot(e.clientX - mouse.x, e.clientY - mouse.y);
+    mouse.px = mouse.x; mouse.py = mouse.y; mouse.x = e.clientX; mouse.y = e.clientY;
+
+    if (grab) {
+        if (mode === "build") gather();
+        else { grab.x = mouse.x; grab.y = mouse.y; }
+    }
+});
+
+c.addEventListener("pointerup", e => {
+    if (grab) {
+        if (grab.isAccessory) {
+            accessories.push(grab);
+        } else if (mode === "move" && moved < 8) {
+            returnToPile();
+        } else {
+            chunks.push({...grab, vx: (grab.x - mouse.px)*.1, vy: (grab.y - mouse.py)*.1, settled: false});
+        }
+    }
+    grab = mode = null; mouse.down = false;
+    try { c.releasePointerCapture?.(e.pointerId) } catch {}
+});
+
+c.addEventListener("contextmenu", e => e.preventDefault());
+resize(); addEventListener("resize", resize); requestAnimationFrame(loop);
+</script>
+</body>
+</html>

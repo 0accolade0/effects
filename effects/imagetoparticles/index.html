@@ -1,0 +1,381 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Dotmatter — Interactive Particle Fields</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Offside&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}
+html,body{width:100%;height:100%;margin:0;overflow:hidden}
+body{background:#A2C8D7;color:#000;font-family:"Offside",monospace;text-transform:uppercase}
+button,input{font:inherit}
+
+#app{position:fixed;inset:0;overflow:hidden;background:#A2C8D7}
+/* Subtle retro scanlines to match the aesthetic */
+#app:before{content:"";position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px)}
+
+#particleCanvas{position:absolute;inset:0;width:100%;height:100%;display:block}
+
+#controls{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);padding:0 24px;display:flex;justify-content:space-between;align-items:center;pointer-events:none}
+#controls>div{display:flex;flex-direction:column;gap:12px;width:150px;pointer-events:auto}
+
+.controlButton,button,.sliderControl{
+  width:150px;min-width:150px;height:38px;
+  border-radius:0; /* Sharp corners */
+  font-size:11px;letter-spacing:.05em;font-weight:bold;
+}
+
+.controlButton,button{
+  display:flex;align-items:center;justify-content:center;padding:0 11px;
+  border:2px solid #000;
+  background:#F8DFCD; /* Retro cream/beige */
+  color:#000;
+  cursor:pointer;
+  box-shadow:4px 4px 0 #000; /* Solid retro shadow */
+  transition:.1s ease;
+  white-space:nowrap;
+}
+.controlButton input{display:none}
+
+.controlButton:hover,button:hover{
+  background:#F198AD; /* Pastel pink from reference */
+  transform:translate(3px, 3px); /* Press effect */
+  box-shadow:1px 1px 0 #000;
+}
+
+.sliderControl{
+  padding:0 11px;display:flex;align-items:center;justify-content:space-between;gap:8px;
+  border:2px solid #000;
+  background:#F8DFCD;
+  color:#000;
+  box-shadow:4px 4px 0 #000;
+  white-space:nowrap;
+}
+.sliderControl input{width:65px;height:4px;margin:0;accent-color:#F198AD;cursor:pointer}
+
+#dropMessage{position:absolute;inset:0;display:grid;place-items:center;color:transparent;border:4px dashed transparent;pointer-events:none;transition:.2s ease;font-size:24px;font-weight:bold}
+#dropMessage.active{color:#000;border-color:#000;background:rgba(241,152,173,.3)}
+
+body.finalEmbed #controls,body.finalEmbed #dropMessage{display:none!important}
+
+@media(max-width:700px){
+  #controls{padding:0 10px}
+  #controls>div{width:130px;gap:10px}
+  .controlButton,button,.sliderControl{width:130px;min-width:130px;height:36px;font-size:10px}
+  .sliderControl input{width:50px}
+}
+</style>
+</head>
+<body>
+<main id="app">
+<canvas id="particleCanvas"></canvas>
+
+<div id="controls">
+<div>
+<label class="controlButton"><input id="imageInput" type="file" accept="image/png,image/jpeg,image/webp">UPLOAD IMAGE</label>
+<label class="controlButton"><input id="replaceInput" type="file" accept="image/png,image/jpeg,image/webp">CHANGE IMAGE</label>
+<button id="resetButton">RESET</button>
+<button id="explodeButton">EXPLODE</button>
+</div>
+<div>
+<div class="sliderControl"><span>DENSITY</span><input id="densitySlider" type="range" min="3" max="10" value="1"></div>
+<div class="sliderControl"><span>SIZE</span><input id="sizeSlider" type="range" min=".5" max="3" value="8" step=".1"></div>
+<div class="sliderControl"><span>FORCE</span><input id="forceSlider" type="range" min=".1" max="2.5" value="1" step=".1"></div>
+</div>
+</div>
+
+<div id="dropMessage">DROP IMAGE HERE</div>
+</main>
+
+<script>
+const $=id=>document.getElementById(id),
+canvas=$("particleCanvas"),ctx=canvas.getContext("2d",{alpha:true,desynchronized:true}),
+imageInput=$("imageInput"),replaceInput=$("replaceInput"),resetButton=$("resetButton"),
+explodeButton=$("explodeButton"),densitySlider=$("densitySlider"),sizeSlider=$("sizeSlider"),
+forceSlider=$("forceSlider"),dropMessage=$("dropMessage"),params=new URLSearchParams(location.search),
+embedded=params.get("embed")==="1",finalEmbed=params.get("final")==="1",encodedState=params.get("state");
+
+if(finalEmbed)document.body.classList.add("finalEmbed");
+
+let W=innerWidth,H=innerHeight,DPR=1,particles=[],sourceImage=null,
+particleSize=+sizeSlider.value,force=+forceSlider.value,exploding=false,explodeTimer=0,
+currentImageData=null,currentImageUrl="";
+
+const mouse={x:-9999,y:-9999,active:false,speed:0},
+imgCanvas=document.createElement("canvas"),
+imgCtx=imgCanvas.getContext("2d",{willReadFrequently:true});
+
+const EFFECT_SCHEMA=[
+ {key:"imageUrl",label:"Image URL",type:"image",default:"",placeholder:"https://example.com/your-image.jpg"},
+ {key:"density",label:"Density",type:"range",min:3,max:10,step:1,default:5},
+ {key:"size",label:"Particle Size",type:"range",min:.5,max:3,step:.1,default:1.2},
+ {key:"force",label:"Interaction Force",type:"range",min:.1,max:2.5,step:.1,default:1}
+];
+
+function encodeState(obj){
+ try{
+  const bytes=new TextEncoder().encode(JSON.stringify(obj||{}));let bin="";
+  for(let i=0;i<bytes.length;i+=8192)bin+=String.fromCharCode(...bytes.subarray(i,i+8192));
+  return btoa(bin).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+ }catch(e){return ""}
+}
+
+function decodeState(str){
+ try{
+  str=str.replace(/-/g,"+").replace(/_/g,"/");
+  while(str.length%4)str+="=";
+  const bin=atob(str),bytes=new Uint8Array(bin.length);
+  for(let i=0;i<bin.length;i++)bytes[i]=bin.charCodeAt(i);
+  return JSON.parse(new TextDecoder().decode(bytes));
+ }catch(e){return null}
+}
+
+function getEffectState(){
+ return{
+  density:+densitySlider.value,
+  size:+sizeSlider.value,
+  force:+forceSlider.value,
+  imageUrl:currentImageUrl||""
+ };
+}
+
+function sendReady(){
+ if(window.parent!==window)window.parent.postMessage({type:"effect:ready"},"*");
+}
+
+function sendEffectState(e){
+ if(!e.source)return;
+ e.source.postMessage({type:"effect:state",requestId:e.data.requestId,state:getEffectState()},"*");
+}
+
+window.addEventListener("message",e=>{
+ const d=e.data;
+ if(!d)return;
+
+ if(d.type==="effect:get-config"){
+  e.source.postMessage({
+   type:"effect:config-schema",
+   requestId:d.requestId,
+   fields:EFFECT_SCHEMA
+  },"*");
+  return;
+ }
+
+ if(d.type==="effect:get-state"){
+  sendEffectState(e);
+  return;
+ }
+
+ if(d.type==="dotmatter-config")applyEmbedConfig(d);
+});
+
+function resize(){
+ W=innerWidth;H=innerHeight;DPR=Math.min(devicePixelRatio||1,1.5);
+ canvas.width=W*DPR;canvas.height=H*DPR;
+ canvas.style.width=W+"px";canvas.style.height=H+"px";
+ ctx.setTransform(DPR,0,0,DPR,0,0);
+ if(sourceImage)buildParticles();
+}
+addEventListener("resize",resize);resize();
+
+class Particle{
+ constructor(x,y,r,g,b,a){
+  this.x=this.homeX=x;this.y=this.homeY=y;this.vx=0;this.vy=0;
+  this.r=r;this.g=g;this.b=b;this.a=a;
+  this.size=(.65+Math.random()*.65)*particleSize;
+ }
+ update(){
+  if(mouse.active&&!exploding){
+   const dx=this.x-mouse.x,dy=this.y-mouse.y,ds=dx*dx+dy*dy,r=mouse.speed>2?230:190;
+   if(ds<r*r){
+    const inv=1/Math.sqrt(ds+1),dist=ds*inv,fall=1-dist/r,
+    s=fall*fall*(1+Math.min(mouse.speed*.035,1.8))*force*.95;
+    this.vx+=dx*inv*s;this.vy+=dy*inv*s;
+   }
+  }
+  const dx=this.homeX-this.x,dy=this.homeY-this.y;
+  if(exploding){
+   this.vx+=dx*.0025;this.vy+=dy*.0025;this.vx*=.985;this.vy*=.985;
+  }else{
+   this.vx+=dx*.026;this.vy+=dy*.026;this.vx*=.84;this.vy*=.84;
+  }
+  this.x+=this.vx;this.y+=this.vy;
+ }
+ draw(){
+  ctx.globalAlpha=this.a;
+  ctx.fillStyle=`rgb(${this.r},${this.g},${this.b})`;
+  ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,6.283);ctx.fill();
+ }
+}
+
+function loadImageSource(src,isUrl=false){
+ if(!src)return;
+ const img=new Image();
+ if(isUrl)img.crossOrigin="anonymous";
+ img.onload=()=>{
+  sourceImage=img;
+  if(isUrl)currentImageUrl=src;
+  exploding=false;
+  buildParticles();
+ };
+ img.onerror=()=>console.warn("Dotmatter: image could not be loaded");
+ img.src=src;
+}
+
+function loadDefault(){
+ const img=new Image();
+ img.onload=()=>{
+  sourceImage=img;
+  currentImageUrl="";
+  buildParticles();
+ };
+ img.onerror=()=>console.warn("Dotmatter: demo.png not found");
+ img.src="demo.png";
+}
+
+function loadImage(file){
+ if(!file||!file.type.startsWith("image/"))return;
+ const reader=new FileReader();
+ reader.onload=e=>{
+  currentImageData=e.target.result;
+  currentImageUrl="";
+  loadImageSource(currentImageData);
+ };
+ reader.readAsDataURL(file);
+}
+
+function applyEmbedConfig(c={}){
+ if(c.density!=null)densitySlider.value=Math.max(3,Math.min(10,+c.density||5));
+ if(c.size!=null)sizeSlider.value=Math.max(.5,Math.min(3,+c.size||1.2));
+ if(c.force!=null)forceSlider.value=Math.max(.1,Math.min(2.5,+c.force||1));
+
+ particleSize=+sizeSlider.value;
+ force=+forceSlider.value;
+
+ if(c.imageUrl){
+  currentImageUrl=c.imageUrl;
+  currentImageData=null;
+  loadImageSource(c.imageUrl,true);
+ }else if(sourceImage)buildParticles();
+}
+
+function restoreUrlState(){
+ if(!encodedState)return;
+ const state=decodeState(encodedState);
+ if(state)applyEmbedConfig(state);
+}
+
+function buildParticles(){
+ if(!sourceImage)return;
+ particles.length=0;
+
+ const step=+densitySlider.value,ratio=sourceImage.width/sourceImage.height,sr=W/H;
+ let dw,dh;
+
+ if(ratio>sr){dw=W*.82;dh=dw/ratio}
+ else{dh=H*.70;dw=dh*ratio}
+
+ const scale=Math.min(.7,1000/Math.max(dw,dh)),
+ aw=Math.max(1,Math.floor(dw*scale)),ah=Math.max(1,Math.floor(dh*scale));
+
+ imgCanvas.width=aw;imgCanvas.height=ah;
+ imgCtx.clearRect(0,0,aw,ah);
+ imgCtx.drawImage(sourceImage,0,0,aw,ah);
+
+ const data=imgCtx.getImageData(0,0,aw,ah).data,ox=(W-dw)/2,oy=(H-dh)/2;
+
+ for(let y=0;y<ah;y+=step)for(let x=0;x<aw;x+=step){
+  const i=(y*aw+x)*4,a=data[i+3];
+  if(a>=40)particles.push(new Particle(
+   ox+(x/aw)*dw,oy+(y/ah)*dh,data[i],data[i+1],data[i+2],a/255
+  ));
+ }
+}
+
+addEventListener("pointermove",e=>{
+ const dx=e.clientX-mouse.x,dy=e.clientY-mouse.y;
+ mouse.x=e.clientX;mouse.y=e.clientY;
+ mouse.speed=Math.min(Math.sqrt(dx*dx+dy*dy),60);mouse.active=true;
+},{passive:true});
+
+addEventListener("pointerleave",()=>{
+ mouse.active=false;mouse.speed=0;
+});
+
+sizeSlider.addEventListener("input",()=>{
+ particleSize=+sizeSlider.value;
+ for(const p of particles)p.size=(.65+Math.random()*.65)*particleSize;
+});
+
+forceSlider.addEventListener("input",()=>force=+forceSlider.value);
+densitySlider.addEventListener("change",buildParticles);
+imageInput.addEventListener("change",e=>loadImage(e.target.files[0]));
+replaceInput.addEventListener("change",e=>loadImage(e.target.files[0]));
+
+resetButton.addEventListener("click",()=>{
+ exploding=false;
+ for(const p of particles){
+  p.x=p.homeX;p.y=p.homeY;p.vx=0;p.vy=0;
+ }
+});
+
+explodeButton.addEventListener("click",()=>{
+ exploding=true;explodeTimer=performance.now();
+ for(const p of particles){
+  const dx=p.x-W*.5,dy=p.y-H*.5,d=Math.sqrt(dx*dx+dy*dy)+1,s=5+Math.random()*10;
+  p.vx+=(dx/d)*s;p.vy+=(dy/d)*s;
+ }
+});
+
+addEventListener("dragenter",e=>{
+ if(finalEmbed)return;
+ e.preventDefault();dropMessage.classList.add("active");
+});
+
+addEventListener("dragover",e=>{
+ if(finalEmbed)return;
+ e.preventDefault();
+});
+
+addEventListener("dragleave",e=>{
+ if(finalEmbed)return;
+ e.preventDefault();dropMessage.classList.remove("active");
+});
+
+addEventListener("drop",e=>{
+ if(finalEmbed)return;
+ e.preventDefault();dropMessage.classList.remove("active");
+ loadImage(e.dataTransfer.files[0]);
+});
+
+function render(now){
+ if(exploding&&now-explodeTimer>900)exploding=false;
+ ctx.clearRect(0,0,W,H);
+ ctx.globalCompositeOperation="source-over";
+ ctx.globalAlpha=1;
+
+ if(particles.length){
+  for(const p of particles){p.update();p.draw()}
+ }else{
+  ctx.globalAlpha=.7;
+  const cx=W*.5,cy=H*.5;
+  for(let i=0;i<100;i++){
+   const a=i*2.399+now*.00015,r=80+(i%10)*13,
+   x=cx+Math.cos(a)*r,y=cy+Math.sin(a)*r*.65;
+   ctx.fillStyle=`rgb(${180+i%70},${150+i%60},${190+i%50})`;
+   ctx.beginPath();ctx.arc(x,y,1.4,0,6.283);ctx.fill();
+  }
+ }
+ requestAnimationFrame(render);
+}
+
+requestAnimationFrame(render);
+loadDefault();
+if(encodedState)setTimeout(restoreUrlState,0);
+if(window.parent!==window)setTimeout(sendReady,50);
+</script>
+</body>
+</html>
